@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 public class LoaiPhi {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="MALOAIPHI")
+    @Column(name="MALOAI")
     private Long maLoaiPhi;
 
     @Column(name="TENLOAIPHI",columnDefinition="VARCHAR(100)")

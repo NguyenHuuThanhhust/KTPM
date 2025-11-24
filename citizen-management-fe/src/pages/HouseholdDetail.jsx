@@ -1,14 +1,104 @@
 import Header from "../headers/Header";
 
 export default function HouseholdDetail() {
-  const household = {
-    soHoKhau: "HK123456",
-    chuHo: "Nguyễn Văn A",
-    soNha: "25",
-    duongPho: "Tố Hữu",
-    phuong: "La Khê",
-    quan: "Hà Đông",
-  };
+  const household = [
+    {
+      soHoKhau: "HK123456",
+      chuHo: "Nguyễn Văn A",
+      soNha: "25",
+      duongPho: "Tố Hữu",
+      phuong: "La Khê",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK654321",
+      chuHo: "Trần Thị B",
+      soNha: "10",
+      duongPho: "Lê Văn Lương",
+      phuong: "Mộ Lao",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK112233",
+      chuHo: "Lê Văn C",
+      soNha: "5",
+      duongPho: "Quang Trung",
+      phuong: "Văn Quán",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK445566",
+      chuHo: "Phạm Thị D",
+      soNha: "15",
+      duongPho: "Trần Phú",
+      phuong: "Yên Nghĩa",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK778899",
+      chuHo: "Hoàng Văn E",
+      soNha: "30",
+      duongPho: "Nguyễn Trãi",
+      phuong: "Hà Cầu",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK998877",
+      chuHo: "Đỗ Thị F",
+      soNha: "12",
+      duongPho: "Phùng Hưng",
+      phuong: "Phú Lãm",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK334455",
+      chuHo: "Vũ Văn G",
+      soNha: "8",
+      duongPho: "Bà Triệu",
+      phuong: "Kiến Hưng",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK556677",
+      chuHo: "Trịnh Thị H",
+      soNha: "20",
+      duongPho: "Lý Thường Kiệt",
+      phuong: "Dương Nội",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK221133",
+      chuHo: "Lý Văn I",
+      soNha: "18",
+      duongPho: "Hà Trì",
+      phuong: "Hà Cầu",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK887766",
+      chuHo: "Phan Thị J",
+      soNha: "22",
+      duongPho: "Tô Hiệu",
+      phuong: "La Khê",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK445577",
+      chuHo: "Trần Văn K",
+      soNha: "28",
+      duongPho: "Quốc lộ 6",
+      phuong: "Mộ Lao",
+      quan: "Hà Đông",
+    },
+    {
+      soHoKhau: "HK667788",
+      chuHo: "Ngô Thị L",
+      soNha: "14",
+      duongPho: "Văn Phú",
+      phuong: "Phú Lãm",
+      quan: "Hà Đông",
+    },
+  ];
 
   const nhanKhau = [
     {
@@ -85,85 +175,57 @@ export default function HouseholdDetail() {
           <Header />
 
           {/* THÂN: scroll trong khung, full width */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
-            {/* Thông tin Hộ khẩu */}
-            <div className="bg-gray-900 rounded-2xl shadow-xl p-8 border border-white/10">
-              <h2 className="text-3xl font-semibold mb-6">Thông tin Hộ khẩu</h2>
+          <div className="flex-1 overflow-hidden flex gap-6 p-6 md:p-8">
+            {/* Nửa trái: Danh sách hộ khẩu + Nhân khẩu (scroll) */}
+            <div className="flex-1 overflow-y-auto space-y-6">
+              {/* Danh sách Nhân khẩu */}
+              <div className="bg-gray-900 rounded-2xl shadow-xl p-8 border border-white/10">
+                <h2 className="text-2xl font-semibold mb-6">
+                  Danh sách Hộ khẩu
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-200">
-                <div>
-                  <p className="text-gray-400">Số hộ khẩu</p>
-                  <p className="text-lg font-medium">{household.soHoKhau}</p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Họ tên chủ hộ</p>
-                  <p className="text-lg font-medium">{household.chuHo}</p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Số nhà</p>
-                  <p className="text-lg font-medium">{household.soNha}</p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Đường phố / Ấp</p>
-                  <p className="text-lg font-medium">{household.duongPho}</p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Phường / Xã</p>
-                  <p className="text-lg font-medium">{household.phuong}</p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Quận / Huyện</p>
-                  <p className="text-lg font-medium">{household.quan}</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-gray-200 border-collapse">
+                    <thead>
+                      <tr className="bg-gray-800 text-gray-300 uppercase text-sm">
+                        <th className="p-3 text-left">Số hộ khẩu</th>
+                        <th className="p-3 text-left">Họ tên chủ hộ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {household.map((nk) => (
+                        <tr
+                          key={nk.soHoKhau}
+                          className={`border-b border-gray-700 hover:bg-gray-800/70 transition `}
+                        >
+                          <td className="p-3 font-medium">{nk.soHoKhau}</td>
+                          <td className="p-3 font-medium">{nk.chuHo}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
 
-            {/* Danh sách Nhân khẩu */}
-            <div className="bg-gray-900 rounded-2xl shadow-xl p-8 border border-white/10">
-              <h2 className="text-3xl font-semibold mb-6">
-                Danh sách Nhân khẩu
+            {/* Nửa phải: Khung cố định */}
+            <div className="w-72 shrink-0 bg-gray-900 rounded-2xl shadow-xl p-6 border border-white/10 h-fit sticky top-0">
+              <h2 className="text-2xl font-semibold mb-4">
+                Thông tin chi tiết
               </h2>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-gray-200 border-collapse">
-                  <thead>
-                    <tr className="bg-gray-800 text-gray-300 uppercase text-sm">
-                      <th className="p-3 text-left">Họ tên</th>
-                      <th className="p-3 text-left">Ngày sinh</th>
-                      <th className="p-3 text-left">CCCD</th>
-                      <th className="p-3 text-left">Nghề nghiệp</th>
-                      <th className="p-3 text-left">Quan hệ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {nhanKhau.map((nk) => (
-                      <tr
-                        key={nk.id}
-                        className={`border-b border-gray-700 hover:bg-gray-800/70 transition ${
-                          nk.quanHeChuHo === "Chủ hộ" ? "bg-purple-900/40" : ""
-                        }`}
-                      >
-                        <td className="p-3 font-medium">
-                          {nk.hoTen}
-                          {nk.quanHeChuHo === "Chủ hộ" && (
-                            <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
-                              Chủ hộ
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3">{nk.ngaySinh}</td>
-                        <td className="p-3">{nk.cccd || "—"}</td>
-                        <td className="p-3">{nk.ngheNghiep || "—"}</td>
-                        <td className="p-3">{nk.quanHeChuHo}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-4 text-gray-300">
+                <div>
+                  <p className="text-sm text-gray-400">Số hộ khẩu</p>
+                  <p className="font-medium">HK123456</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Chủ hộ</p>
+                  <p className="font-medium">Nguyễn Văn A</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Địa chỉ</p>
+                  <p className="font-medium">25 Tố Hữu, La Khê, Hà Đông</p>
+                </div>
               </div>
             </div>
           </div>

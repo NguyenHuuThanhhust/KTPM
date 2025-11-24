@@ -181,14 +181,14 @@ export default function HouseholdDetail() {
             {/* Nửa trái: Danh sách hộ khẩu + Nhân khẩu (scroll) */}
             <div className="flex-1 overflow-y-auto space-y-6">
               {/* Danh sách Nhân khẩu */}
-              <div className="bg-gray-900 rounded-2xl shadow-xl p-8 border border-white/10">
+              <div className="bg-gray-900 rounded-2xl shadow-xl p-8 border border-white/10 flex flex-col h-fit max-h-full">
                 <h2 className="text-2xl font-semibold mb-6">
                   Danh sách Hộ khẩu
                 </h2>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto flex-1 overflow-y-auto">
                   <table className="w-full text-gray-200 border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 bg-gray-900">
                       <tr className="bg-gray-800 text-gray-300 uppercase text-sm">
                         <th className="p-3 text-left">Số hộ khẩu</th>
                         <th className="p-3 text-left">Họ tên chủ hộ</th>
@@ -227,11 +227,11 @@ export default function HouseholdDetail() {
               </div>
 
               {/* Khung nhỏ dưới: Lịch sử biến động */}
-              <div className="flex-1 bg-gray-800 rounded-xl p-4 border border-gray-700 overflow-y-auto">
-                <h3 className="text-lg font-semibold mb-3 text-white">
+              <div className="flex-1 bg-gray-800 rounded-xl p-4 border border-gray-700 flex flex-col overflow-hidden">
+                <h3 className="text-lg font-semibold mb-3 text-white flex-shrink-0">
                   Lịch sử biến động
                 </h3>
-                <div className="space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
                   <div className="bg-gray-700 rounded-lg p-2 border border-gray-600 hover:border-purple-500 transition">
                     <p className="text-xs text-gray-400">01/01/2024</p>
                     <p className="text-white text-sm font-medium">
@@ -252,6 +252,20 @@ export default function HouseholdDetail() {
                       Cập nhật thông tin
                     </p>
                     <p className="text-xs text-gray-500">Nguyễn Văn A</p>
+                  </div>
+                  <div className="bg-gray-700 rounded-lg p-2 border border-gray-600 hover:border-purple-500 transition">
+                    <p className="text-xs text-gray-400">15/12/2023</p>
+                    <p className="text-white text-sm font-medium">
+                      Xóa nhân khẩu
+                    </p>
+                    <p className="text-xs text-gray-500">Trần Thị E</p>
+                  </div>
+                  <div className="bg-gray-700 rounded-lg p-2 border border-gray-600 hover:border-purple-500 transition">
+                    <p className="text-xs text-gray-400">15/12/2023</p>
+                    <p className="text-white text-sm font-medium">
+                      Xóa nhân khẩu
+                    </p>
+                    <p className="text-xs text-gray-500">Trần Thị E</p>
                   </div>
                 </div>
               </div>

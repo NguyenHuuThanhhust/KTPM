@@ -2,6 +2,7 @@
 import ClockBadge from "../components/ClockBadge";
 
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 const MenuIcon = ({ className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -213,15 +214,46 @@ const AvatarIcon = ({ className }) => (
     </defs>
   </svg>
 );
+const initialNotifications = [
+  {
+    id: 1,
+    title: "Gia hạn tạm trú",
+    description: "Trịnh Văn Tài còn 5 ngày trước khi hết hạn.",
+    time: "5 phút trước",
+    read: false,
+    link: "/temporary-residents",
+  },
+  {
+    id: 2,
+    title: "User mới được tạo",
+    description: "Tài khoản canbo.thuphi cần kích hoạt.",
+    time: "20 phút trước",
+    read: false,
+    link: "/caidat/nguoi-dung",
+  },
+  {
+    id: 3,
+    title: "Báo cáo tuần",
+    description: "Sẵn sàng tải về tại mục Báo cáo.",
+    time: "Hôm qua",
+    read: true,
+    link: "/baocao/danso",
+  },
+];
+
 const Header = () => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isAvatarOpen, setIsAvatarOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [openMobileDropdown, setOpenMobileDropdown] = useState(null);
+  const [notifications, setNotifications] = useState(initialNotifications);
   const avatarDropdownRef = useRef(null);
   const notificationsDropdownRef = useRef(null);
   const headerRef = useRef(null);
+
+  const unreadCount = notifications.filter((noti) => !noti.read).length;
 
   const navLinks = [
     {
@@ -299,6 +331,23 @@ const Header = () => {
   const toggleMobileDropdown = (label) => {
     setOpenMobileDropdown(openMobileDropdown === label ? null : label);
   };
+
+  const handleNotificationClick = (notification) => {
+    setNotifications((prev) =>
+      prev.map((item) =>
+        item.id === notification.id ? { ...item, read: true } : item
+      )
+    );
+    if (notification.link) {
+      navigate(notification.link);
+    }
+    setIsNotificationsOpen(false);
+  };
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  };
+
   return (
     <header
       ref={headerRef}
@@ -387,10 +436,15 @@ const Header = () => {
                   setOpenDropdown(null);
                   setIsAvatarOpen(false);
                 }}
-                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none"
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none relative"
               >
                 <span className="sr-only">View notifications</span>
                 <BellIcon className="h-6 w-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
               <div
                 className={`absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg transition-opacity duration-300 ${
@@ -399,30 +453,45 @@ const Header = () => {
                     : "opacity-0 invisible"
                 }`}
               >
-                <div className="p-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Notifications
-                  </p>
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      Thông báo
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {unreadCount} thông báo chưa đọc
+                    </p>
+                  </div>
+                  <button
+                    onClick={markAllRead}
+                    className="text-xs text-blue-500 hover:text-blue-400"
+                  >
+                    Đánh dấu tất cả đã đọc
+                  </button>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <a
-                    href="#"
-                    className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    <p className="font-medium">New message</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      You have a new message from Jane Doe.
-                    </p>
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    <p className="font-medium">Server update</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Server #1 will be updated at 3:00 AM.
-                    </p>
-                  </a>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex flex-col gap-1 ${
+                        notification.read ? "bg-transparent" : "bg-blue-50/70 dark:bg-blue-500/10"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
+                          {notification.title}
+                        </p>
+                        {!notification.read && (
+                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {notification.description}
+                      </p>
+                      <span className="text-[11px] text-gray-400">{notification.time}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

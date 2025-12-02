@@ -1,337 +1,283 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Filter, MapPin, Pencil, Search, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../headers/Header";
+import { residentRecords } from "../data/residents";
+
+const perPageOptions = [5, 10, 20];
+const residenceTypeMap = {
+  "thuong-tru": { label: "Thường trú", className: "bg-emerald-500/10 text-emerald-200 border border-emerald-500/40" },
+  "tam-tru": { label: "Tạm trú", className: "bg-amber-500/10 text-amber-200 border border-amber-500/40" },
+  "kinh-doanh": { label: "Kinh doanh", className: "bg-blue-500/10 text-blue-200 border border-blue-500/40" },
+};
 
 export default function QuanLyNhanKhau() {
-  const navigate = useNavigate();
-
-  const nhanKhau = useMemo(
-    () => [
-      {
-        id: 1,
-        hoTen: "Nguyễn Văn A",
-        ngaySinh: "1975-02-10",
-        noiSinh: "Hà Nội",
-        nguyenQuan: "Nam Định",
-        ngheNghiep: "Công nhân",
-        noiLamViec: "Công ty CP ABC",
-        cccd: "012345678901",
-        ngayCap: "2016-03-01",
-        noiCap: "CA Hà Nội",
-        dangKyThuongTru: "2001-05-10",
-        thuongTruTruoc: "Nam Định",
-        quanHeChuHo: "Chủ hộ",
-        gioiTinh: "Nam",
-      },
-      {
-        id: 2,
-        hoTen: "Trần Thị B",
-        ngaySinh: "1979-12-22",
-        noiSinh: "Hà Đông",
-        nguyenQuan: "Hà Nam",
-        ngheNghiep: "Nội trợ",
-        noiLamViec: "",
-        cccd: "012345678900",
-        ngayCap: "2017-08-15",
-        noiCap: "CA Hà Nội",
-        dangKyThuongTru: "2003-02-10",
-        thuongTruTruoc: "Hà Nam",
-        quanHeChuHo: "Vợ",
-        gioiTinh: "Nữ",
-      },
-      {
-        id: 3,
-        hoTen: "Nguyễn Văn C",
-        ngaySinh: "2005-06-10",
-        noiSinh: "Hà Đông",
-        nguyenQuan: "Hà Nội",
-        ngheNghiep: "Sinh viên",
-        noiLamViec: "ĐH Bách Khoa",
-        cccd: "",
-        ngayCap: "",
-        noiCap: "",
-        dangKyThuongTru: "2005-06-12",
-        thuongTruTruoc: "",
-        quanHeChuHo: "Con trai",
-        gioiTinh: "Nam",
-      },
-    ],
-    []
-  );
-
-  const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState({ gioiTinh: "", quanHe: "", ngheNghiep: "" });
-
-  const [splitMode, setSplitMode] = useState(false);
-  const [selectedForSplit, setSelectedForSplit] = useState([]);
-
-  const [showCreateBubble, setShowCreateBubble] = useState(false);
-  const [showDetailBubble, setShowDetailBubble] = useState(null);
+  const [search, setSearch] = useState("");
+  const [gender, setGender] = useState("all");
+  const [residenceType, setResidenceType] = useState("all");
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState(null);
 
   const filtered = useMemo(() => {
-    let arr = [...nhanKhau];
-    if (query) {
-      const q = query.toLowerCase();
-      arr = arr.filter(
-        (p) => p.hoTen.toLowerCase().includes(q) || (p.cccd || "").toLowerCase().includes(q)
-      );
+    return residentRecords.filter((resident) => {
+      const matchesSearch =
+        resident.name.toLowerCase().includes(search.toLowerCase()) ||
+        resident.cccd.toLowerCase().includes(search.toLowerCase());
+      const matchesGender = gender === "all" ? true : resident.gender === gender;
+      const matchesType = residenceType === "all" ? true : resident.residenceType === residenceType;
+      return matchesSearch && matchesGender && matchesType;
+    });
+  }, [search, gender, residenceType]);
+
+  const totalPages = Math.ceil(filtered.length / perPage) || 1;
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+
+  const viewResident = (resident) => {
+    setSelected(resident);
+  };
+
+  const deleteResident = (resident) => {
+    if (confirm(`Bạn muốn xoá nhân khẩu ${resident.name}?`)) {
+      alert("Đã xoá (mô phỏng).");
     }
-    if (filters.gioiTinh) arr = arr.filter((p) => p.gioiTinh === filters.gioiTinh);
-    if (filters.quanHe) arr = arr.filter((p) => p.quanHeChuHo === filters.quanHe);
-    if (filters.ngheNghiep) arr = arr.filter((p) => p.ngheNghiep.includes(filters.ngheNghiep));
-
-    if (sortBy === "name") arr.sort((a, b) => a.hoTen.localeCompare(b.hoTen, "vi"));
-    if (sortBy === "birthPlace") arr.sort((a, b) => a.noiSinh.localeCompare(b.noiSinh, "vi"));
-    if (sortBy === "cccd") arr.sort((a, b) => (a.cccd || "").localeCompare(b.cccd || ""));
-    return arr;
-  }, [nhanKhau, query, sortBy, filters]);
-
-  const total = nhanKhau.length;
+  };
 
   return (
     <div className="relative min-h-screen bg-gray-900 text-gray-100">
-      {/* Background video (decorative) */}
       <video
-        className="fixed inset-0 w-full h-full object-cover pointer-events-none"
+        className="fixed inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
         src="/videos/background.mp4"
         autoPlay
         loop
         muted
-        playsInline
-        preload="auto"
-        style={{ zIndex: 0 }}
       />
-
-      <div className="flex h-screen w-screen relative z-10 bg-transparent">
+      <div className="flex h-screen w-screen relative z-10 bg-black/30 backdrop-blur-sm">
         <Sidebar />
-
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-
           <main className="flex-1 overflow-auto">
-            <div className="w-full h-full p-6 md:p-8">
-              {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gray-800/80 rounded-lg shadow p-6 border-l-4 border-blue-400 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-300 text-sm font-medium">Tổng Nhân khẩu</p>
-                      <p className="text-3xl font-bold text-white mt-2">{total}</p>
-                    </div>
-                    <div className="text-4xl text-blue-400">👥</div>
-                  </div>
+            <div className="w-full h-full p-6 md:p-8 space-y-8">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-blue-200">Module</p>
+                  <h1 className="text-3xl font-semibold text-white">Danh sách nhân khẩu</h1>
+                  <p className="text-gray-300 mt-1 max-w-2xl">
+                    Giám sát tình hình cư trú theo từng hộ, hỗ trợ thao tác nhanh xem/sửa/xóa thông tin nhân khẩu.
+                  </p>
                 </div>
-
-                <div className="bg-gray-800/80 rounded-lg shadow p-6 border-l-4 border-green-400 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-300 text-sm font-medium">Nam / Nữ</p>
-                      <p className="text-3xl font-bold text-white mt-2">—</p>
-                    </div>
-                    <div className="text-4xl text-green-400">⚧️</div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-800/80 rounded-lg shadow p-6 border-l-4 border-purple-400 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-300 text-sm font-medium">Khoảng tuổi trung bình</p>
-                      <p className="text-3xl font-bold text-white mt-2">—</p>
-                    </div>
-                    <div className="text-4xl text-purple-400">📊</div>
-                  </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => (window.location.href = "/residents/search")}
+                    className="px-5 py-3 rounded-xl bg-gray-800 text-gray-200 border border-white/10 hover:bg-gray-700"
+                  >
+                    Tìm kiếm nâng cao
+                  </button>
+                  <button
+                    onClick={() => (window.location.href = "/residents/add")}
+                    className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium flex items-center gap-2"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    Thêm nhân khẩu
+                  </button>
                 </div>
               </div>
 
-              {/* List card */}
-              <div className="bg-gray-800/80 rounded-lg shadow hover:shadow-lg transition-shadow">
-                <div className="p-6 border-b border-gray-700">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <h2 className="text-xl font-bold">Danh sách Nhân khẩu</h2>
+              <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { label: "Tổng nhân khẩu", value: residentRecords.length, desc: "Tổng hợp toàn phường" },
+                  { label: "Tạm trú", value: residentRecords.filter((r) => r.residenceType === "tam-tru").length, desc: "Đang lưu trú ngắn hạn" },
+                  { label: "Kinh doanh", value: residentRecords.filter((r) => r.residenceType === "kinh-doanh").length, desc: "Hộ kinh doanh đăng ký" },
+                ].map((card) => (
+                  <div key={card.label} className="bg-gray-900/80 border border-white/5 rounded-2xl p-6 shadow-lg shadow-black/30">
+                    <p className="text-sm text-gray-400 uppercase tracking-wide">{card.label}</p>
+                    <p className="text-3xl font-bold text-white mt-2">{card.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">{card.desc}</p>
+                  </div>
+                ))}
+              </section>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <label className="text-sm text-gray-300 whitespace-nowrap">Sắp xếp:</label>
-                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-gray-700 text-gray-200 p-2 rounded">
-                          <option value="">Mặc định</option>
-                          <option value="name">Tên</option>
-                          <option value="birthPlace">Nơi sinh</option>
-                          <option value="cccd">CCCD</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm..." className="bg-gray-700 text-gray-200 p-2 rounded w-48" />
-                        <button onClick={() => { setQuery(""); setSortBy(""); setFilters({ gioiTinh: "", quanHe: "", ngheNghiep: "" }); }} className="bg-gray-700 text-gray-200 px-3 py-2 rounded hover:bg-gray-600 transition">Reset</button>
-                      </div>
-
-                      <button onClick={() => setFilterOpen(!filterOpen)} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded transition">Lọc</button>
-
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => { setShowCreateBubble(true); setShowDetailBubble(null); }} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+ Thêm</button>
-                        <button onClick={() => { setSplitMode(!splitMode); setSelectedForSplit([]); }} className={`px-3 py-2 rounded text-white transition ${splitMode ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}`}>{splitMode ? "Hủy" : "Tách hộ"}</button>
-                      </div>
+              <section className="bg-gray-900/80 border border-white/5 rounded-3xl shadow-2xl shadow-black/40">
+                <div className="p-6 border-b border-white/5 flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 bg-gray-800/80 px-3 py-2 rounded-xl flex-1 min-w-[220px]">
+                      <Search className="w-4 h-4 text-gray-500" />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Tìm kiếm theo tên, CCCD..."
+                        className="bg-transparent text-sm focus:outline-none flex-1"
+                      />
                     </div>
+                    <select
+                      className="bg-gray-800/80 text-sm px-3 py-2 rounded-xl border border-gray-700 text-gray-100"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                    >
+                      <option value="all">Giới tính</option>
+                      <option value="Nam">Nam</option>
+                      <option value="Nữ">Nữ</option>
+                    </select>
+                    <select
+                      className="bg-gray-800/80 text-sm px-3 py-2 rounded-xl border border-gray-700 text-gray-100"
+                      value={residenceType}
+                      onChange={(e) => setResidenceType(e.target.value)}
+                    >
+                      <option value="all">Loại cư trú</option>
+                      <option value="thuong-tru">Thường trú</option>
+                      <option value="tam-tru">Tạm trú</option>
+                      <option value="kinh-doanh">Kinh doanh</option>
+                    </select>
+                    <select
+                      className="bg-gray-800/80 text-sm px-3 py-2 rounded-xl border border-gray-700 text-gray-100"
+                      value={perPage}
+                      onChange={(e) => {
+                        setPerPage(Number(e.target.value));
+                        setPage(1);
+                      }}
+                    >
+                      {perPageOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt} dòng / trang
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* Filter panel */}
-                {filterOpen && (
-                  <div className="bg-gray-800 rounded-b p-4 border-b border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-300">Giới tính</label>
-                        <select className="w-full bg-gray-700 text-gray-200 p-2 rounded" value={filters.gioiTinh} onChange={(e) => setFilters({ ...filters, gioiTinh: e.target.value })}>
-                          <option value="">Tất cả</option>
-                          <option value="Nam">Nam</option>
-                          <option value="Nữ">Nữ</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-sm text-gray-300">Quan hệ với chủ hộ</label>
-                        <select className="w-full bg-gray-700 text-gray-200 p-2 rounded" value={filters.quanHe} onChange={(e) => setFilters({ ...filters, quanHe: e.target.value })}>
-                          <option value="">Tất cả</option>
-                          <option value="Chủ hộ">Chủ hộ</option>
-                          <option value="Vợ">Vợ</option>
-                          <option value="Con trai">Con trai</option>
-                          <option value="Con gái">Con gái</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="text-sm text-gray-300">Nghề nghiệp</label>
-                        <input className="w-full bg-gray-700 text-gray-200 p-2 rounded" placeholder="Nhập nghề nghiệp..." value={filters.ngheNghiep} onChange={(e) => setFilters({ ...filters, ngheNghiep: e.target.value })} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-900 border-b border-gray-700 sticky top-0">
-                      <tr className="text-sm text-gray-300 uppercase">
-                        {splitMode && <th className="px-6 py-3 text-center w-12">Chọn</th>}
-                        <th className="px-6 py-3 text-left">Họ tên</th>
-                        <th className="px-6 py-3 text-left">Ngày sinh</th>
-                        <th className="px-6 py-3 text-left">Nơi sinh</th>
-                        <th className="px-6 py-3 text-left">CCCD</th>
-                        <th className="px-6 py-3 text-left">Quan hệ</th>
+                  <table className="w-full text-sm">
+                    <thead className="bg-white/5 text-gray-400 uppercase">
+                      <tr>
+                        <th className="px-6 py-4 text-left">Họ tên</th>
+                        <th className="px-6 py-4 text-left">Năm sinh</th>
+                        <th className="px-6 py-4 text-left">CCCD</th>
+                        <th className="px-6 py-4 text-left">Hộ khẩu</th>
+                        <th className="px-6 py-4 text-left">Loại cư trú</th>
+                        <th className="px-6 py-4 text-center">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.length > 0 ? (
-                        filtered.map((p) => (
-                          <tr
-                            key={p.id}
-                            className={`border-b border-gray-700 hover:bg-gray-800/70 transition cursor-pointer ${selectedForSplit.includes(p.id) ? "bg-blue-900/30" : ""}`}
-                            onClick={() => {
-                              if (!splitMode) {
-                                setShowDetailBubble(p);
-                                setShowCreateBubble(false);
-                              }
-                            }}
-                          >
-                            {splitMode && (
-                              <td className="px-6 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedForSplit.includes(p.id)}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    if (e.target.checked) setSelectedForSplit([...selectedForSplit, p.id]);
-                                    else setSelectedForSplit(selectedForSplit.filter((id) => id !== p.id));
-                                  }}
-                                />
+                      {paginated.length ? (
+                        paginated.map((resident) => {
+                          const typeBadge = residenceTypeMap[resident.residenceType];
+                          return (
+                            <tr key={resident.id} className="border-b border-white/5 hover:bg-white/5 transition">
+                              <td className="px-6 py-4 text-white font-semibold">{resident.name}</td>
+                              <td className="px-6 py-4 text-gray-300">{new Date(resident.birthDate).toLocaleDateString("vi-VN")}</td>
+                              <td className="px-6 py-4 text-gray-300">{resident.cccd}</td>
+                              <td className="px-6 py-4 text-gray-300">{resident.household}</td>
+                              <td className="px-6 py-4">
+                                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${typeBadge.className}`}>
+                                  {typeBadge.label}
+                                </span>
                               </td>
-                            )}
-
-                            <td className="px-6 py-3 font-semibold">{p.hoTen}</td>
-                            <td className="px-6 py-3">{new Date(p.ngaySinh).toLocaleDateString("vi-VN")}</td>
-                            <td className="px-6 py-3">{p.noiSinh}</td>
-                            <td className="px-6 py-3">{p.cccd || "—"}</td>
-                            <td className="px-6 py-3">{p.quanHeChuHo}</td>
-                          </tr>
-                        ))
+                              <td className="px-6 py-4">
+                                <div className="flex justify-center gap-2">
+                                  <button
+                                    className="px-3 py-2 rounded-lg bg-blue-500/10 text-blue-200 border border-blue-400/30"
+                                    onClick={() => viewResident(resident)}
+                                  >
+                                    Xem
+                                  </button>
+                                  <button className="px-3 py-2 rounded-lg bg-yellow-500/10 text-yellow-200 border border-yellow-400/30">
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    className="px-3 py-2 rounded-lg bg-red-500/10 text-red-300 border border-red-400/30"
+                                    onClick={() => deleteResident(resident)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
-                          <td colSpan={splitMode ? 6 : 5} className="px-6 py-8 text-center text-gray-400">Không tìm thấy nhân khẩu nào</td>
+                          <td colSpan={6} className="px-6 py-10 text-center text-gray-400">
+                            Không có nhân khẩu phù hợp
+                          </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-700 text-sm text-gray-300">Hiển thị {filtered.length} trên {total} nhân khẩu</div>
-              </div>
-
-              {/* Create bubble */}
-              {showCreateBubble && (
-                <div className="fixed right-6 top-24 w-80 bg-gray-800 border border-gray-700 rounded-2xl p-5 shadow-xl z-50">
-                  <h3 className="text-xl font-bold mb-3">Thêm nhân khẩu</h3>
-                  <div className="space-y-3">
-                    <input className="w-full p-2 rounded bg-gray-700 text-white" placeholder="Họ tên" />
-                    <input className="w-full p-2 rounded bg-gray-700 text-white" placeholder="Ngày sinh" />
-                    <input className="w-full p-2 rounded bg-gray-700 text-white" placeholder="Nơi sinh" />
-                    <input className="w-full p-2 rounded bg-gray-700 text-white" placeholder="Nghề nghiệp" />
-                    <input className="w-full p-2 rounded bg-gray-700 text-white" placeholder="CCCD" />
-                    <div className="flex gap-2 mt-2">
-                      <button className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white w-full" onClick={() => { alert('Tạo nhân khẩu (chưa lưu)'); setShowCreateBubble(false); }}>✔ Xác nhận</button>
-                      <button className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-white w-full" onClick={() => setShowCreateBubble(false)}>Hủy</button>
-                    </div>
+                <div className="px-6 py-4 flex flex-wrap items-center justify-between text-sm text-gray-400 border-t border-white/5 gap-3">
+                  <p>
+                    Hiển thị {(page - 1) * perPage + 1} - {Math.min(page * perPage, filtered.length)} / {filtered.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1 rounded bg-gray-800 text-gray-200 disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <span>
+                      Trang {page}/{totalPages}
+                    </span>
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      className="px-3 py-1 rounded bg-gray-800 text-gray-200 disabled:opacity-40"
+                    >
+                      Next
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* Detail bubble */}
-              {showDetailBubble && (
-                <div className="fixed right-6 top-24 w-96 bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl z-50">
-                  <h3 className="text-xl font-bold mb-4">Thông tin nhân khẩu</h3>
-                  <div className="space-y-2 text-gray-200 text-sm">
-                    <p><strong>Họ tên:</strong> {showDetailBubble.hoTen}</p>
-                    <p><strong>Ngày sinh:</strong> {showDetailBubble.ngaySinh}</p>
-                    <p><strong>Nơi sinh:</strong> {showDetailBubble.noiSinh}</p>
-                    <p><strong>Nguyên quán:</strong> {showDetailBubble.nguyenQuan}</p>
-                    <p><strong>Nghề nghiệp:</strong> {showDetailBubble.ngheNghiep}</p>
-                    <p><strong>Nơi làm việc:</strong> {showDetailBubble.noiLamViec || '—'}</p>
-                    <p><strong>CCCD:</strong> {showDetailBubble.cccd || '—'}</p>
-                    <p><strong>Ngày cấp:</strong> {showDetailBubble.ngayCap || '—'}</p>
-                    <p><strong>Nơi cấp:</strong> {showDetailBubble.noiCap || '—'}</p>
-                    <p><strong>ĐK thường trú:</strong> {showDetailBubble.dangKyThuongTru || '—'}</p>
-                    <p><strong>Trước đó:</strong> {showDetailBubble.thuongTruTruoc || '—'}</p>
-                    <p><strong>Quan hệ:</strong> {showDetailBubble.quanHeChuHo}</p>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <button onClick={() => setShowDetailBubble(null)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white w-full">Đóng</button>
-                    <button onClick={() => { alert('Chuyển tới trang sửa (chưa cài đặt)'); }} className="px-4 py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white w-full">Sửa</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Confirm split panel */}
-              {splitMode && selectedForSplit.length > 0 && (
-                <div className="mt-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-                  <h3 className="text-lg font-semibold text-white mb-2">Xác nhận tách hộ</h3>
-                  <p className="text-gray-300 text-sm mb-3">Bạn đã chọn <strong>{selectedForSplit.length}</strong> nhân khẩu để tách:</p>
-                  <ul className="list-disc list-inside text-gray-200 mb-4">
-                    {selectedForSplit.map((id) => {
-                      const person = nhanKhau.find((p) => p.id === id);
-                      return <li key={id}>{person?.hoTen}</li>;
-                    })}
-                  </ul>
-                  <div className="flex gap-3">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" onClick={() => { alert('Tách hộ thành công (tạm)'); setSelectedForSplit([]); setSplitMode(false); }}>✔ Xác nhận tách hộ</button>
-                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded" onClick={() => setSelectedForSplit([])}>Hủy chọn</button>
-                  </div>
-                </div>
-              )}
+              </section>
             </div>
           </main>
         </div>
       </div>
+
+      {selected && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSelected(null)} />
+          <div className="relative w-full max-w-md bg-gray-950 border-l border-white/10 h-full overflow-y-auto p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Thông tin chi tiết</p>
+                <h3 className="text-2xl font-semibold text-white flex items-center gap-2">
+                  <UsersIcon className="w-6 h-6 text-blue-300" />
+                  {selected.name}
+                </h3>
+                <p className="text-xs text-gray-400">{selected.id} • {selected.cccd}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-white text-xl">
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4 text-sm">
+              {[
+                { label: "Ngày sinh", value: new Date(selected.birthDate).toLocaleDateString("vi-VN") },
+                { label: "Nơi sinh", value: selected.birthPlace },
+                { label: "Giới tính", value: selected.gender },
+                { label: "Hộ khẩu", value: selected.household },
+                { label: "Loại cư trú", value: residenceTypeMap[selected.residenceType].label },
+                { label: "Nghề nghiệp", value: selected.occupation },
+                { label: "Nơi làm việc", value: selected.workplace || "—" },
+                { label: "Số điện thoại", value: selected.phone || "—" },
+                { label: "Ngày cấp CCCD", value: new Date(selected.issueDate).toLocaleDateString("vi-VN") },
+                { label: "Nơi cấp CCCD", value: selected.issuePlace },
+              ].map((row) => (
+                <div key={row.label} className="rounded-2xl border border-white/10 p-4">
+                  <p className="text-xs uppercase text-gray-400">{row.label}</p>
+                  <p className="text-white font-semibold mt-1">{row.value}</p>
+                </div>
+              ))}
+            </div>
+            <button className="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-2xl">
+              Chỉnh sửa nhân khẩu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

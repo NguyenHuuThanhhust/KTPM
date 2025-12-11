@@ -47,8 +47,9 @@ public class NhanKhauService {
         nhanKhau.setNgaySinh(request.getNgaySinh());
         nhanKhau.setQuanHeVoiChuHo(request.getQuanHeVoiChuHo());
         nhanKhau.setTrangThai("Thuong tru");
-        // Bỏ trống nghề nghiệp và CMND
-        nhanKhau.setNgheNghiep(null);
+        // Lưu nghề nghiệp nếu có (trước đây đặt null cứng)
+        nhanKhau.setNgheNghiep(request.getNgheNghiep());
+        // CMND để trống
         nhanKhau.setCmnd(null);
         // Ghi "mới sinh" cho nơi thường trú chuyển đến
         nhanKhau.setNoiThuongTruChuyenDen("mới sinh");
@@ -123,7 +124,7 @@ public class NhanKhauService {
         // Lưu lịch sử thay đổi hộ khẩu
         LichSuThayDoiHoKhau lichSu = new LichSuThayDoiHoKhau();
         lichSu.setHoKhau(hoKhau);
-        lichSu.setNoiDungThayDoi(request.getNoiDungThayDoi() != null ? 
+        lichSu.setNoiDungThayDoi(request.getNoiDungThayDoi() != null ?
                 request.getNoiDungThayDoi() : "Thay đổi chủ hộ");
         lichSu.setNgayThayDoi(LocalDateTime.now());
         lichSu.setGhiChu(request.getGhiChu());
@@ -246,5 +247,46 @@ public class NhanKhauService {
     public List<LichSuThayDoiHoKhau> xemLichSuThayDoiHoKhau(Long soHoKhau) {
         return lichSuThayDoiHoKhauRepository.findByHoKhau_SoHoKhauOrderByNgayThayDoiDesc(soHoKhau);
     }
-}
 
+    // Thêm các phương thức đọc (chỉ đọc) để trả danh sách nhân khẩu
+    @Transactional(readOnly = true)
+    public List<NhanKhau> layTatCaNhanKhau() {
+        return nhanKhauRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<NhanKhau> layNhanKhauTheoSoHoKhau(Long soHoKhau) {
+        return nhanKhauRepository.findByHoKhau_SoHoKhau(soHoKhau);
+    }
+
+    // New: trả về tất cả hộ khẩu
+    @Transactional(readOnly = true)
+    public List<HoKhau> layTatCaHoKhau() {
+        return hoKhauRepository.findAll();
+    }
+
+    // New: trả về 1 hộ khẩu theo soHoKhau (hoặc null nếu không tồn tại)
+    @Transactional(readOnly = true)
+    public HoKhau layHoKhauTheoSoHoKhau(Long soHoKhau) {
+        return hoKhauRepository.findById(soHoKhau).orElse(null);
+    }
+
+    // New: xóa một nhân khẩu (delete resident)
+    @Transactional
+    public void xoaNhanKhau(Long maNhanKhau) {
+        NhanKhau nhanKhau = nhanKhauRepository.findById(maNhanKhau)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu: " + maNhanKhau));
+
+        // Lưu lịch sử thay đổi trước khi xóa
+        LichSuThayDoiNhanKhau lichSu = new LichSuThayDoiNhanKhau();
+        lichSu.setNhanKhau(nhanKhau);
+        lichSu.setLoaiThayDoi("Xoa");
+        lichSu.setNoiDungThayDoi("Xóa nhân khẩu: " + nhanKhau.getHoTen() + " (id=" + maNhanKhau + ")");
+        lichSu.setNgayThayDoi(LocalDateTime.now());
+        lichSu.setGhiChu("Xóa bởi hệ thống hoặc người dùng");
+        lichSuThayDoiNhanKhauRepository.save(lichSu);
+
+        // Xóa thực sự
+        nhanKhauRepository.delete(nhanKhau);
+    }
+}

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/nhankhau")
@@ -161,6 +162,51 @@ public class NhanKhauController {
         Map<String, Object> ketQua = thongKeService.thongKeTongHop(request);
         return ResponseEntity.ok(ketQua);
     }
+
+    // Mới: API lấy danh sách nhân khẩu (tùy chọn lọc theo soHoKhau)
+    @GetMapping
+    public ResponseEntity<List<NhanKhauDTO>> layDanhSachNhanKhau(@RequestParam(name = "hoKhauId", required = false) Long hoKhauId) {
+        List<NhanKhau> danhSach;
+        if (hoKhauId == null) {
+            danhSach = nhanKhauService.layTatCaNhanKhau();
+        } else {
+            danhSach = nhanKhauService.layNhanKhauTheoSoHoKhau(hoKhauId);
+        }
+        List<NhanKhauDTO> dtos = danhSach.stream().map(this::toDto).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    // Mới: API lấy danh sách nhân khẩu theo đường dẫn rõ ràng cho một hộ khẩu
+    @GetMapping("/ho-khau/{soHoKhau}")
+    public ResponseEntity<List<NhanKhauDTO>> layNhanKhauTheoHoKhau(@PathVariable Long soHoKhau) {
+        List<NhanKhau> danhSach = nhanKhauService.layNhanKhauTheoSoHoKhau(soHoKhau);
+        List<NhanKhauDTO> dtos = danhSach.stream().map(this::toDto).collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    private NhanKhauDTO toDto(NhanKhau n) {
+        NhanKhauDTO d = new NhanKhauDTO();
+        d.setMaNhanKhau(n.getMaNhanKhau());
+        if (n.getHoKhau() != null) d.setSoHoKhau(n.getHoKhau().getSoHoKhau());
+        d.setHoTen(n.getHoTen());
+        d.setGioiTinh(n.getGioiTinh());
+        d.setNgaySinh(n.getNgaySinh());
+        d.setCmnd(n.getCmnd());
+        d.setQuanHeVoiChuHo(n.getQuanHeVoiChuHo());
+        d.setTrangThai(n.getTrangThai());
+        d.setNgheNghiep(n.getNgheNghiep());
+        return d;
+    }
+
+//    // New: Xóa một nhân khẩu
+//    @DeleteMapping("/{maNhanKhau}")
+//    public ResponseEntity<Void> xoaNhanKhau(@PathVariable Long maNhanKhau) {
+//        try {
+//            nhanKhauService.xoaNhanKhau(maNhanKhau);
+//            return ResponseEntity.noContent().build();
+//        } catch (Exception e) {
+//            // Nếu không tìm thấy hoặc lỗi khác -> trả 404 (client có thể thay đổi thành 400/500 tuỳ ý)
+//            return ResponseEntity.notFound().build();
+//        }
+//    }
 }
-
-

@@ -38,20 +38,6 @@ export default function Sidebar() {
       ]
     },
     {
-      id: 'sinhvien', name: 'Sinh viên Thuê trọ', icon: '🎓', badge: 5, submenu: [
-        { name: 'Danh sách sinh viên', link: '/sinhvien/danh-sach' },
-        { name: 'Đăng ký mới', link: '/sinhvien/dang-ky' },
-        { name: 'Sắp hết hạn thuê', link: '/sinhvien/het-han', badge: 5 }
-      ]
-    },
-    {
-      id: 'kinhdoanh', name: 'Hộ Kinh doanh', icon: '💼', submenu: [
-        { name: 'Danh sách hộ KD', link: '/kinhdoanh/danh-sach' },
-        { name: 'Đăng ký mới', link: '/kinhdoanh/dang-ky' },
-        { name: 'Theo loại hình', link: '/kinhdoanh/loai-hinh' }
-      ]
-    },
-    {
       id: 'temporary',
       name: 'Dân cư Tạm trú',
       icon: 'UserCheck',
@@ -67,12 +53,7 @@ export default function Sidebar() {
         { name: 'Phí vệ sinh', link: '/fees/sanitation', description: 'Danh sách thu phí vệ sinh' },
         { name: 'Lập phiếu thu', link: '/fees/sanitation/collect', description: 'Thu phí vệ sinh' },
         { name: 'Thống kê theo năm', link: '/fees/sanitation/statistics', description: 'Báo cáo phí vệ sinh' },
-        { name: 'Hộ chưa đóng', link: '/fees/sanitation/unpaid', description: 'Danh sách hộ chưa nộp' },
         { name: 'Đóng góp tự nguyện', link: '/donations/campaigns', description: 'Các đợt đóng góp' },
-        { name: 'Tạo đợt mới', link: '/donations/campaigns/create', description: 'Tạo đợt đóng góp' },
-        { name: 'Thu đóng góp', link: '/donations/collect', description: 'Thu tiền đóng góp' },
-        { name: 'Báo cáo tổng hợp', link: '/fees/reports/monthly', description: 'Tổng thu theo tháng' },
-        { name: 'Cài đặt định mức', link: '/fees/settings/sanitation-rate', description: 'Định mức phí vệ sinh' }
       ]
     },
     {
@@ -138,7 +119,7 @@ export default function Sidebar() {
   const isPathActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
-    <div className="w-64 min-w-[250px] bg-gradient-to-b from-blue-950 via-blue-900 to-blue-800 text-white h-screen overflow-y-auto flex-shrink-0">
+    <div className="w-75 min-w-[250px] bg-gradient-to-b from-blue-950 via-blue-900 to-blue-800 text-white h-screen overflow-y-auto flex-shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-blue-700">
         <div className="flex items-center gap-3 mb-2">

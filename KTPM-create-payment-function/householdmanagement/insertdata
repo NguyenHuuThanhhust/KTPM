@@ -1,0 +1,162 @@
+USE household_management;
+USE household_management;
+
+-- 1. Chèn dữ liệu vào bảng THANHPHO
+INSERT INTO THANHPHO (TENTHANHPHO) VALUES
+('Hà Nội'),
+('Hồ Chí Minh'),
+('Đà Nẵng'),
+('Hải Phòng'),
+('Cần Thơ');
+
+-- 2. Chèn dữ liệu vào bảng QUANHUYEN
+INSERT INTO QUANHUYEN (TENQUANHUYEN, MATHANHPHO) VALUES
+('Quận Ba Đình', 1),
+('Quận Hoàn Kiếm', 1),
+('Quận Đống Đa', 1),
+('Quận 1', 2),
+('Quận 3', 2),
+('Quận Hải Châu', 3);
+
+-- 3. Chèn dữ liệu vào bảng XAPHUONG
+INSERT INTO XAPHUONG (TENXAPHUONG, MAQUANHUYEN) VALUES
+('Phường Ngọc Hà', 1),
+('Phường Điện Biên', 1),
+('Phường Hàng Bạc', 2),
+('Phường Hàng Bài', 2),
+('Phường Cát Linh', 3),
+('Phường Bến Nghé', 4),
+('Phường Bến Thành', 4);
+
+-- 4. Chèn dữ liệu vào bảng HOKHAU
+INSERT INTO HOKHAU (DIACHI, MAXAPHUONG, NGAYCAP, GHICHU) VALUES
+('Số 12, Ngõ 45, Đường Hoàng Hoa Thám', 1, '2020-01-15 00:00:00', 'Hộ khẩu thường trú'),
+('Số 78, Phố Hàng Bạc', 3, '2019-03-20 00:00:00', 'Hộ khẩu thường trú'),
+('Số 156, Đường Láng', 5, '2021-06-10 00:00:00', 'Hộ khẩu thường trú'),
+('Số 234, Lê Lợi', 6, '2018-11-25 00:00:00', 'Hộ khẩu thường trú'),
+('Số 89, Nguyễn Huệ', 7, '2020-08-30 00:00:00', 'Hộ khẩu thường trú');
+
+-- 5. Chèn dữ liệu vào bảng NHANKHAU
+INSERT INTO NHANKHAU (SOHOKHAU, HOTEN, GIOITINH, NGAYSINH, NGHENGHIEP, QUANHEVOICHUHO, TRANGTHAI, CMND, GHICHU) VALUES
+-- Hộ khẩu 1
+(1, 'Nguyễn Văn An', 'Nam', '1975-05-10 00:00:00', 'Kỹ sư', 'Chủ hộ', 'Thuong tru', '001075012345', NULL),
+(1, 'Trần Thị Bình', 'Nữ', '1978-08-20 00:00:00', 'Giáo viên', 'Vợ', 'Thuong tru', '001078023456', NULL),
+(1, 'Nguyễn Văn Cường', 'Nam', '2005-03-15 00:00:00', 'Học sinh', 'Con', 'Thuong tru', '001005034567', NULL),
+(1, 'Nguyễn Thị Dung', 'Nữ', '2010-11-25 00:00:00', 'Học sinh', 'Con', 'Thuong tru', '001010045678', NULL),
+
+-- Hộ khẩu 2
+(2, 'Lê Văn Em', 'Nam', '1980-02-14 00:00:00', 'Bác sĩ', 'Chủ hộ', 'Thuong tru', '002080056789', NULL),
+(2, 'Phạm Thị Phương', 'Nữ', '1982-07-08 00:00:00', 'Y tá', 'Vợ', 'Thuong tru', '002082067890', NULL),
+(2, 'Lê Văn Giang', 'Nam', '2008-09-20 00:00:00', 'Học sinh', 'Con', 'Thuong tru', '002008078901', NULL),
+
+-- Hộ khẩu 3
+(3, 'Hoàng Văn Hải', 'Nam', '1985-12-05 00:00:00', 'Nhân viên văn phòng', 'Chủ hộ', 'Thuong tru', '003085089012', NULL),
+(3, 'Vũ Thị Hoa', 'Nữ', '1987-04-18 00:00:00', 'Kế toán', 'Vợ', 'Thuong tru', '003087090123', NULL),
+(3, 'Hoàng Văn Khoa', 'Nam', '2012-06-30 00:00:00', 'Học sinh', 'Con', 'Thuong tru', '003012001234', NULL),
+
+-- Hộ khẩu 4
+(4, 'Đỗ Văn Long', 'Nam', '1972-09-12 00:00:00', 'Doanh nhân', 'Chủ hộ', 'Thuong tru', '004072012345', NULL),
+(4, 'Ngô Thị Mai', 'Nữ', '1974-01-28 00:00:00', 'Nội trợ', 'Vợ', 'Thuong tru', '004074023456', NULL),
+
+-- Hộ khẩu 5
+(5, 'Bùi Văn Nam', 'Nam', '1990-07-22 00:00:00', 'Lập trình viên', 'Chủ hộ', 'Thuong tru', '005090034567', NULL),
+(5, 'Trương Thị Oanh', 'Nữ', '1992-03-10 00:00:00', 'Thiết kế đồ họa', 'Vợ', 'Thuong tru', '005092045678', NULL),
+(5, 'Bùi Văn Phú', 'Nam', '2018-05-15 00:00:00', 'Học sinh', 'Con', 'Thuong tru', '005018056789', NULL);
+
+-- 6. Chèn dữ liệu vào bảng ContactInfo
+INSERT INTO ContactInfo (MaNhanKhau, Type, Value, IsPrimary) VALUES
+(1, 'Phone', '0912345678', 1),
+(1, 'Email', 'nguyenvanan@email.com', 1),
+(2, 'Phone', '0923456789', 1),
+(2, 'Email', 'tranbirth@email.com', 1),
+(5, 'Phone', '0934567890', 1),
+(5, 'Email', 'levanem@email.com', 1),
+(8, 'Phone', '0945678901', 1),
+(11, 'Phone', '0956789012', 1),
+(13, 'Phone', '0967890123', 1),
+(13, 'Email', 'buivannam@email.com', 1);
+
+-- 7. Chèn dữ liệu vào bảng BIENDONGNHANKHAU
+INSERT INTO BIENDONGNHANKHAU (MANHANKHAU, LOAIBIENDONG, NGAYBATDAU, NGAYKETTHUC, LYDODOICHUYENDI) VALUES
+(3, 'Chuyển trường', '2020-09-01 00:00:00', '2021-06-30 00:00:00', 'Chuyển trường THPT'),
+(7, 'Nhập học', '2021-09-01 00:00:00', NULL, 'Nhập học lớp 6'),
+(13, 'Chuyển công tác', '2022-01-15 00:00:00', NULL, 'Chuyển công ty mới');
+
+-- 8. Chèn dữ liệu vào bảng GIAYTO
+INSERT INTO GIAYTO (MANHANKHAU, LOAIGIAYTO, SOGIAYTO, NGAYCAP, NOICAP) VALUES
+(1, 'CMND', '001075012345', '2015-05-10 00:00:00', 'Công an TP Hà Nội'),
+(2, 'CMND', '001078023456', '2016-08-20 00:00:00', 'Công an TP Hà Nội'),
+(5, 'CMND', '002080056789', '2018-02-14 00:00:00', 'Công an TP Hà Nội'),
+(8, 'CMND', '003085089012', '2019-12-05 00:00:00', 'Công an TP Hà Nội'),
+(11, 'CMND', '004072012345', '2014-09-12 00:00:00', 'Công an TP HCM'),
+(13, 'CCCD', '005090034567', '2020-07-22 00:00:00', 'Cục Cảnh sát ĐKQL cư trú');
+
+-- 9. Chèn dữ liệu vào bảng CANBO
+INSERT INTO CANBO (HOTEN, CHUCVU, MAXAPHUONG) VALUES
+('Trần Văn Quân', 'Trưởng phòng', 1),
+('Lê Thị Thanh', 'Phó phòng', 1),
+('Nguyễn Văn Sơn', 'Chuyên viên', 3),
+('Phạm Thị Tuyết', 'Chuyên viên', 5),
+('Hoàng Văn Uy', 'Trưởng phòng', 6);
+
+-- 10. Chèn dữ liệu vào bảng TAIKHOAN
+INSERT INTO TAIKHOAN (MACANBO, TENDANGNHAP, MATKHAU, VAITRO) VALUES
+(1, 'tranquan', 'password123', 'Quản trị viên'),
+(2, 'lethanh', 'password123', 'Cán bộ'),
+(3, 'nguyenson', 'password123', 'Cán bộ'),
+(4, 'phamtuyet', 'password123', 'Cán bộ'),
+(5, 'hoanguy', 'password123', 'Quản trị viên');
+
+-- 11. Chèn dữ liệu vào bảng LOAIPHI
+INSERT INTO LOAIPHI (TENLOAIPHI, MOTA, BATBUOC, DINHMUC) VALUES
+('Phí vệ sinh môi trường', 'Phí thu hàng tháng cho dịch vụ vệ sinh', 1, 50000.00),
+('Phí bảo vệ', 'Phí bảo vệ khu dân cư', 1, 100000.00),
+('Quỹ từ thiện', 'Đóng góp quỹ từ thiện hàng năm', 0, 200000.00),
+('Phí quản lý chung cư', 'Phí quản lý và bảo trì chung cư', 1, 150000.00),
+('Ủng hộ tết', 'Ủng hộ quà tết cho người nghèo', 0, 300000.00);
+
+-- 12. Chèn dữ liệu vào bảng DOTTHU
+INSERT INTO DOTTHU (TENDOTTHU, NGAYBATDAU, NGAYKETTHUC) VALUES
+('Thu phí quý 1/2024', '2024-01-01 00:00:00', '2024-03-31 00:00:00'),
+('Thu phí quý 2/2024', '2024-04-01 00:00:00', '2024-06-30 00:00:00'),
+('Thu phí quý 3/2024', '2024-07-01 00:00:00', '2024-09-30 00:00:00'),
+('Thu phí quý 4/2024', '2024-10-01 00:00:00', '2024-12-31 00:00:00'),
+('Ủng hộ Tết Nguyên Đán 2024', '2024-01-15 00:00:00', '2024-02-10 00:00:00');
+
+-- 13. Chèn dữ liệu vào bảng THUPHI
+INSERT INTO THUPHI (SOHOKHAU, MADOTTHU, MALOAI, SOTIEN, NGAYDONG, GHICHU) VALUES
+(1, 1, 1, 50000.00, '2024-01-10 00:00:00', 'Đã đóng đầy đủ'),
+(1, 1, 2, 100000.00, '2024-01-10 00:00:00', 'Đã đóng đầy đủ'),
+(2, 1, 1, 50000.00, '2024-01-15 00:00:00', 'Đã đóng đầy đủ'),
+(2, 1, 2, 100000.00, '2024-01-15 00:00:00', 'Đã đóng đầy đủ'),
+(3, 1, 1, 50000.00, '2024-01-20 00:00:00', 'Đã đóng đầy đủ'),
+(1, 2, 1, 50000.00, '2024-04-08 00:00:00', 'Đã đóng đầy đủ'),
+(1, 2, 2, 100000.00, '2024-04-08 00:00:00', 'Đã đóng đầy đủ'),
+(5, 5, 5, 300000.00, '2024-01-25 00:00:00', 'Ủng hộ tết'),
+(4, 5, 5, 500000.00, '2024-01-28 00:00:00', 'Ủng hộ tết');
+
+-- 14. Chèn dữ liệu vào bảng TamTru
+INSERT INTO TamTru (MaNhanKhau, NoiTamTru, TuNgay, DenNgay, LyDo, TrangThai, GhiChu) VALUES
+(3, 'Ký túc xá Đại học Bách Khoa', '2023-09-01 00:00:00', '2024-06-30 00:00:00', 'Học đại học', 'Dang tam tru', NULL),
+(7, 'Nhà bà ngoại tại Hải Phòng', '2024-01-15 00:00:00', '2024-02-15 00:00:00', 'Nghỉ tết', 'Da ket thuc', 'Đã về'),
+(13, 'Căn hộ thuê tại Quận 1', '2022-01-15 00:00:00', NULL, 'Công tác dài hạn', 'Dang tam tru', NULL);
+
+-- 15. Chèn dữ liệu vào bảng TamVang
+INSERT INTO TamVang (MaNhanKhau, NoiDi, TuNgay, DenNgay, LyDo, TrangThai, GhiChu) VALUES
+(1, 'TP Hồ Chí Minh', '2024-02-01 00:00:00', '2024-02-05 00:00:00', 'Công tác', 'Da ket thuc', 'Đã về'),
+(5, 'Đà Nẵng', '2024-03-10 00:00:00', '2024-03-15 00:00:00', 'Du lịch', 'Da ket thuc', 'Đã về'),
+(11, 'Nha Trang', '2024-07-01 00:00:00', '2024-07-07 00:00:00', 'Nghỉ mát', 'Da ket thuc', 'Đã về');
+
+-- 16. Chèn dữ liệu vào bảng LICHSU_THAYDOI_NHANKHAU
+INSERT INTO LICHSU_THAYDOI_NHANKHAU (MANHANKHAU, LOAITHAYDOI, NOIDUNGTHAYDOI, NGAYTHAYDOI, GHICHU) VALUES
+(1, 'Cập nhật nghề nghiệp', 'Thay đổi từ Nhân viên sang Kỹ sư', '2023-01-15 00:00:00', NULL),
+(2, 'Cập nhật số điện thoại', 'Cập nhật số điện thoại mới', '2023-06-20 00:00:00', NULL),
+(13, 'Cập nhật địa chỉ', 'Thay đổi địa chỉ tạm trú', '2022-01-20 00:00:00', NULL),
+(3, 'Cập nhật trường học', 'Chuyển trường THPT', '2020-09-01 00:00:00', NULL);
+
+-- 17. Chèn dữ liệu vào bảng LICHSU_THAYDOI_HOKHAU
+INSERT INTO LICHSU_THAYDOI_HOKHAU (SOHOKHAU, NOIDUNGTHAYDOI, NGAYTHAYDOI, GHICHU) VALUES
+(1, 'Thêm thành viên mới (con)', '2010-12-01 00:00:00', 'Thêm Nguyễn Thị Dung'),
+(2, 'Cập nhật địa chỉ hộ khẩu', '2021-03-15 00:00:00', 'Sửa địa chỉ chính xác'),
+(3, 'Thêm thành viên mới (con)', '2012-07-05 00:00:00', 'Thêm Hoàng Văn Khoa'),
+(5, 'Thêm thành viên mới (con)', '2018-05-20 00:00:00', 'Thêm Bùi Văn Phú');

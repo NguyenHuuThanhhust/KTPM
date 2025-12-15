@@ -198,6 +198,15 @@ public class NhanKhauController {
         return d;
     }
 
+    @GetMapping("/search-chu-ho")
+    public ResponseEntity<List<ChuHoSearchDTO>> searchChuHo(@RequestParam("q") String q) {
+        try {
+            List<ChuHoSearchDTO> ketQua = nhanKhauService.timKiemChuHo(q);
+            return ResponseEntity.ok(ketQua);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 //    // New: Xóa một nhân khẩu
 //    @DeleteMapping("/{maNhanKhau}")
 //    public ResponseEntity<Void> xoaNhanKhau(@PathVariable Long maNhanKhau) {
@@ -209,4 +218,5 @@ public class NhanKhauController {
 //            return ResponseEntity.notFound().build();
 //        }
 //    }
+
 }

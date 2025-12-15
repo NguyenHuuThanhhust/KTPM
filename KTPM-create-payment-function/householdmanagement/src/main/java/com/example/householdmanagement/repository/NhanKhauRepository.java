@@ -27,5 +27,14 @@ public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
     NhanKhau findChuHoBySoHoKhau(@Param("soHoKhau") Long soHoKhau);
     
     List<NhanKhau> findByCmnd(String cmnd);
+
+    @Query("select n from NhanKhau n where n.quanHeVoiChuHo = :role and lower(n.hoTen) like lower(concat('%', :q, '%'))")
+    List<NhanKhau> searchByRoleAndHoTen(@Param("role") String role, @Param("q") String q);
+
+    @Query("select n from NhanKhau n where n.quanHeVoiChuHo = :role and n.cmnd like concat('%', :q, '%')")
+    List<NhanKhau> searchByRoleAndCmnd(@Param("role") String role, @Param("q") String q);
+
+    @Query("select n from NhanKhau n where n.quanHeVoiChuHo = :role and n.hoKhau.soHoKhau = :soHo")
+    List<NhanKhau> searchByRoleAndSoHo(@Param("role") String role, @Param("soHo") Long soHo);
 }
 

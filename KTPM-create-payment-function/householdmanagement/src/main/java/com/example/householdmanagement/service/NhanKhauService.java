@@ -8,7 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class NhanKhauService {
@@ -289,4 +290,39 @@ public class NhanKhauService {
         // Xóa thực sự
         nhanKhauRepository.delete(nhanKhau);
     }
+
+
+    public List<ChuHoSearchDTO> timKiemChuHo(String query) {
+        if (query == null) return Collections.emptyList();
+        String q = query.trim();
+        if (q.length() < 2) return Collections.emptyList();
+
+        List<NhanKhau> results = new ArrayList<>();
+
+        // search by name
+        results.addAll(nhanKhauRepository.searchByRoleAndHoTen("Chủ hộ", q));
+
+        // search by cmnd
+        results.addAll(nhanKhauRepository.searchByRoleAndCmnd("Chủ hộ", q));
+
+        // if numeric, try soHoKhau
+        try {
+            Long soHo = Long.parseLong(q);
+            results.addAll(nhanKhauRepository.searchByRoleAndSoHo("Chủ hộ", soHo));
+        } catch (NumberFormatException ignored) {}
+
+        // deduplicate by maNhanKhau
+        Map<Long, NhanKhau> unique = results.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(NhanKhau::getMaNhanKhau, n -> n, (a, b) -> a));
+
+        // map to DTO
+        return unique.values().stream().map(n -> {
+            HoKhau hk = n.getHoKhau();
+            Long soHo = hk != null ? hk.getSoHoKhau() : null;
+            String diaChi = hk != null ? (hk.getDiaChi() != null ? hk.getDiaChi() : "") : "";
+            return new ChuHoSearchDTO(n.getMaNhanKhau(), n.getHoTen(), n.getCmnd(), soHo, diaChi);
+        }).collect(Collectors.toList());
+    }
+
 }

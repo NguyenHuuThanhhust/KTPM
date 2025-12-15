@@ -100,12 +100,14 @@ INSERT INTO CANBO (HOTEN, CHUCVU, MAXAPHUONG) VALUES
 ('Hoàng Văn Uy', 'Trưởng phòng', 6);
 
 -- 10. Chèn dữ liệu vào bảng TAIKHOAN
-INSERT INTO TAIKHOAN (MACANBO, TENDANGNHAP, MATKHAU, VAITRO) VALUES
-(1, 'tranquan', 'password123', 'Quản trị viên'),
-(2, 'lethanh', 'password123', 'Cán bộ'),
-(3, 'nguyenson', 'password123', 'Cán bộ'),
-(4, 'phamtuyet', 'password123', 'Cán bộ'),
-(5, 'hoanguy', 'password123', 'Quản trị viên');
+INSERT INTO TAIKHOAN (MACANBO, TENDANGNHAP, EMAIL, MATKHAU, VAITRO, TRANGTHAI)
+VALUES
+(1, 'admin01', 'admin01@gmail.com', '123456', 'ADMIN', 'ACTIVE'),
+(2, 'canbo01', 'canbo01@gmail.com', '123456', 'CAN_BO', 'ACTIVE'),
+(3, 'canbo02', 'canbo02@gmail.com', '123456', 'CAN_BO', 'PENDING'),
+(4, 'canbo03', 'canbo03@gmail.com', '123456', 'LANH_DAO', 'ACTIVE'),
+(5, 'ketoan01', 'ketoan01@gmail.com', '123456', 'KE_TOAN', 'ACTIVE');
+
 
 -- 11. Chèn dữ liệu vào bảng LOAIPHI
 INSERT INTO LOAIPHI (TENLOAIPHI, MOTA, BATBUOC, DINHMUC) VALUES

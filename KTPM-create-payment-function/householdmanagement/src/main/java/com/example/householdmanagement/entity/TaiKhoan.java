@@ -27,4 +27,11 @@ public class TaiKhoan {
 
     @Column(name="VAITRO",columnDefinition="VARCHAR(50)")
     private String vaiTro;
+
+    @Column(name="EMAIL", columnDefinition="VARCHAR(100)", unique=true)
+    private String email;
+
+    // Store trangThai as string; columnDefinition declares the ENUM in DB schema
+    @Column(name="TRANGTHAI", columnDefinition="ENUM('DANG_HOAT_DONG','NGUNG_HOAT_DONG','CHO_KICH_HOAT')")
+    private String trangThai = "CHO_KICH_HOAT";
 }

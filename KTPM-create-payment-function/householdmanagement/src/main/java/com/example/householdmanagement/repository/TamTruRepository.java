@@ -19,7 +19,7 @@ public interface TamTruRepository extends JpaRepository<TamTru, Long> {
     @Query("SELECT t FROM TamTru t WHERE t.tuNgay BETWEEN :tuNgay AND :denNgay OR t.denNgay BETWEEN :tuNgay AND :denNgay")
     List<TamTru> findByThoiGianBetween(@Param("tuNgay") LocalDateTime tuNgay, @Param("denNgay") LocalDateTime denNgay);
 
-    // New: return list of maTamTru for TamTru where the resident's name contains the query (case-insensitive)
+    // added: return list of maTamTru for TamTru where the resident's name contains the query (case-insensitive)
     @Query("SELECT t.maTamTru FROM TamTru t WHERE LOWER(t.nhanKhau.hoTen) LIKE CONCAT('%', LOWER(:q), '%')")
     List<Long> findMaTamTruByNhanKhauHoTenContainingIgnoreCase(@Param("q") String q);
 }

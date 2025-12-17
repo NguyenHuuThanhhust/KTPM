@@ -30,4 +30,8 @@ public class LoaiPhi {
 
     @Column(name="DINHMUC",precision=12, scale=2)
     private BigDecimal dinhMuc;
+
+    @Column(name = "MUCTIEU", precision = 15, scale = 2)
+    private BigDecimal mucTieu;
+
 }

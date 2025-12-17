@@ -20,111 +20,96 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class ThuPhiService {
-    
+
     @Autowired
     private ThuPhiRepository thuPhiRepository;
-    
+
     @Autowired
     private HoKhauRepository hoKhauRepository;
-    
+
     @Autowired
     private DotThuRepository dotThuRepository;
-    
-    @Autowired
-    private LoaiPhiRepository loaiPhiRepository;
-    
-    // CRUD cơ bản
+
+    // ================= CRUD =================
+
     public List<ThuPhiDTO> getAllThuPhi() {
-        return thuPhiRepository.findAll().stream()
+        return thuPhiRepository.findAll()
+                .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     public Optional<ThuPhiDTO> getThuPhiById(Long id) {
         return thuPhiRepository.findById(id)
                 .map(this::convertToDTO);
     }
-    
-    public ThuPhiDTO createThuPhi(ThuPhiDTO thuPhiDTO) {
-        // Check if HoKhau exists
-        HoKhau hoKhau = hoKhauRepository.findById(thuPhiDTO.getSoHoKhau())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu với ID: " + thuPhiDTO.getSoHoKhau()));
-        
-        // Check if DotThu exists
-        DotThu dotThu = dotThuRepository.findById(thuPhiDTO.getMaDotThu())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt thu với ID: " + thuPhiDTO.getMaDotThu()));
-        
-        // Check if LoaiPhi exists
-        LoaiPhi loaiPhi = loaiPhiRepository.findById(thuPhiDTO.getMaLoai())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy loại phí với ID: " + thuPhiDTO.getMaLoai()));
-        
-        ThuPhi thuPhi = convertToEntity(thuPhiDTO);
+
+    public ThuPhiDTO createThuPhi(ThuPhiDTO dto) {
+
+        HoKhau hoKhau = hoKhauRepository.findById(dto.getSoHoKhau())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy hộ khẩu ID: " + dto.getSoHoKhau()));
+
+        DotThu dotThu = dotThuRepository.findById(dto.getMaDotThu())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy đợt thu ID: " + dto.getMaDotThu()));
+
+        ThuPhi thuPhi = new ThuPhi();
         thuPhi.setHoKhau(hoKhau);
         thuPhi.setDotThu(dotThu);
-        thuPhi.setLoaiPhi(loaiPhi);
-        
-        ThuPhi savedThuPhi = thuPhiRepository.save(thuPhi);
-        return convertToDTO(savedThuPhi);
+        thuPhi.setSoTien(dto.getSoTien());
+        thuPhi.setNgayDong(dto.getNgayDong());
+        thuPhi.setGhiChu(dto.getGhiChu());
+
+        return convertToDTO(thuPhiRepository.save(thuPhi));
     }
-    
-    public ThuPhiDTO updateThuPhi(Long id, ThuPhiDTO thuPhiDTO) {
-        ThuPhi existingThuPhi = thuPhiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thu phí với ID: " + id));
-        
-        // Update HoKhau if changed
-        if (!existingThuPhi.getHoKhau().getSoHoKhau().equals(thuPhiDTO.getSoHoKhau())) {
-            HoKhau newHoKhau = hoKhauRepository.findById(thuPhiDTO.getSoHoKhau())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy hộ khẩu với ID: " + thuPhiDTO.getSoHoKhau()));
-            existingThuPhi.setHoKhau(newHoKhau);
+
+    public ThuPhiDTO updateThuPhi(Long id, ThuPhiDTO dto) {
+
+        ThuPhi thuPhi = thuPhiRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy thu phí ID: " + id));
+
+        if (!thuPhi.getHoKhau().getSoHoKhau().equals(dto.getSoHoKhau())) {
+            HoKhau hoKhau = hoKhauRepository.findById(dto.getSoHoKhau())
+                    .orElseThrow(() ->
+                            new RuntimeException("Không tìm thấy hộ khẩu ID: " + dto.getSoHoKhau()));
+            thuPhi.setHoKhau(hoKhau);
         }
-        
-        // Update DotThu if changed
-        if (!existingThuPhi.getDotThu().getMaDotThu().equals(thuPhiDTO.getMaDotThu())) {
-            DotThu newDotThu = dotThuRepository.findById(thuPhiDTO.getMaDotThu())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt thu với ID: " + thuPhiDTO.getMaDotThu()));
-            existingThuPhi.setDotThu(newDotThu);
+
+        if (!thuPhi.getDotThu().getMaDotThu().equals(dto.getMaDotThu())) {
+            DotThu dotThu = dotThuRepository.findById(dto.getMaDotThu())
+                    .orElseThrow(() ->
+                            new RuntimeException("Không tìm thấy đợt thu ID: " + dto.getMaDotThu()));
+            thuPhi.setDotThu(dotThu);
         }
-        
-        // Update LoaiPhi if changed
-        if (!existingThuPhi.getLoaiPhi().getMaLoaiPhi().equals(thuPhiDTO.getMaLoai())) {
-            LoaiPhi newLoaiPhi = loaiPhiRepository.findById(thuPhiDTO.getMaLoai())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy loại phí với ID: " + thuPhiDTO.getMaLoai()));
-            existingThuPhi.setLoaiPhi(newLoaiPhi);
-        }
-        
-        // Update fields
-        existingThuPhi.setSoTien(thuPhiDTO.getSoTien());
-        existingThuPhi.setNgayDong(thuPhiDTO.getNgayDong());
-        existingThuPhi.setGhiChu(thuPhiDTO.getGhiChu());
-        
-        ThuPhi updatedThuPhi = thuPhiRepository.save(existingThuPhi);
-        return convertToDTO(updatedThuPhi);
+
+        thuPhi.setSoTien(dto.getSoTien());
+        thuPhi.setNgayDong(dto.getNgayDong());
+        thuPhi.setGhiChu(dto.getGhiChu());
+
+        return convertToDTO(thuPhiRepository.save(thuPhi));
     }
-    
+
     public void deleteThuPhi(Long id) {
         thuPhiRepository.deleteById(id);
     }
-    
+
+    // ================= MAPPING =================
+
     private ThuPhiDTO convertToDTO(ThuPhi thuPhi) {
         ThuPhiDTO dto = new ThuPhiDTO();
         dto.setMaThuPhi(thuPhi.getMaThuPhi());
         dto.setSoHoKhau(thuPhi.getHoKhau().getSoHoKhau());
         dto.setMaDotThu(thuPhi.getDotThu().getMaDotThu());
-        dto.setMaLoai(thuPhi.getLoaiPhi().getMaLoaiPhi());
         dto.setSoTien(thuPhi.getSoTien());
         dto.setNgayDong(thuPhi.getNgayDong());
         dto.setGhiChu(thuPhi.getGhiChu());
+
+        // THÔNG TIN SUY RA
         dto.setTenDotThu(thuPhi.getDotThu().getTenDotThu());
-        dto.setTenLoaiPhi(thuPhi.getLoaiPhi().getTenLoaiPhi());
+        dto.setTenLoaiPhi(thuPhi.getDotThu().getLoaiPhi().getTenLoaiPhi());
+
         return dto;
-    }
-    
-    private ThuPhi convertToEntity(ThuPhiDTO dto) {
-        ThuPhi thuPhi = new ThuPhi();
-        thuPhi.setMaThuPhi(dto.getMaThuPhi());
-        thuPhi.setSoTien(dto.getSoTien());
-        thuPhi.setNgayDong(dto.getNgayDong());
-        thuPhi.setGhiChu(dto.getGhiChu());
-        return thuPhi;
     }
 }

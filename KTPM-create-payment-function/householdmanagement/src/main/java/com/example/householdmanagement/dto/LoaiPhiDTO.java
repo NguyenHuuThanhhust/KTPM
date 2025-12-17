@@ -17,7 +17,17 @@ public class LoaiPhiDTO {
     private Boolean batBuoc;
     
     private BigDecimal dinhMuc;
-    
+
+    private BigDecimal mucTieu;
+
+    public BigDecimal getMucTieu() {
+        return mucTieu;
+    }
+
+    public void setMucTieu(BigDecimal mucTieu) {
+        this.mucTieu = mucTieu;
+    }
+
     // Constructors
     public LoaiPhiDTO() {}
     

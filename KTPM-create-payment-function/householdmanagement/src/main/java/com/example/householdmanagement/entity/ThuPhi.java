@@ -26,10 +26,6 @@ public class ThuPhi {
     @JoinColumn(name="MADOTTHU", nullable=false)
     private DotThu dotThu;
 
-    @ManyToOne
-    @JoinColumn(name="MALOAI", nullable=false)
-    private LoaiPhi loaiPhi;
-
     @Column(name="SOTIEN",precision=12, scale=2)
     private BigDecimal soTien;
 

@@ -63,6 +63,7 @@ public class LoaiPhiService {
         dto.setMoTa(loaiPhi.getMoTa());
         dto.setBatBuoc(loaiPhi.getBatBuoc());
         dto.setDinhMuc(loaiPhi.getDinhMuc());
+        dto.setMucTieu(loaiPhi.getMucTieu());
         return dto;
     }
     
@@ -73,6 +74,7 @@ public class LoaiPhiService {
         loaiPhi.setMoTa(dto.getMoTa());
         loaiPhi.setBatBuoc(dto.getBatBuoc());
         loaiPhi.setDinhMuc(dto.getDinhMuc());
+        dto.setMucTieu(loaiPhi.getMucTieu());
         return loaiPhi;
     }
 }

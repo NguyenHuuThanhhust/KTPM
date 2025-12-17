@@ -13,9 +13,8 @@ public class ThuPhiDTO {
     
     @NotNull(message = "Mã đợt thu không được để trống")
     private Long maDotThu;
-    
-    @NotNull(message = "Mã loại phí không được để trống")
-    private Long maLoai;
+
+
     
     @NotNull(message = "Số tiền không được để trống")
     private BigDecimal soTien;
@@ -36,7 +35,6 @@ public class ThuPhiDTO {
     public ThuPhiDTO(Long soHoKhau, Long maDotThu, Long maLoai, BigDecimal soTien, LocalDateTime ngayDong) {
         this.soHoKhau = soHoKhau;
         this.maDotThu = maDotThu;
-        this.maLoai = maLoai;
         this.soTien = soTien;
         this.ngayDong = ngayDong;
     }
@@ -65,14 +63,7 @@ public class ThuPhiDTO {
     public void setMaDotThu(Long maDotThu) {
         this.maDotThu = maDotThu;
     }
-    
-    public Long getMaLoai() {
-        return maLoai;
-    }
-    
-    public void setMaLoai(Long maLoai) {
-        this.maLoai = maLoai;
-    }
+
     
     public BigDecimal getSoTien() {
         return soTien;

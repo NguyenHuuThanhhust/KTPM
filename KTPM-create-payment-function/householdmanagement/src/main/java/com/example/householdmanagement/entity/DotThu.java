@@ -17,6 +17,10 @@ public class DotThu {
     @Column(name="MADOTTHU")
     private Long maDotThu;
 
+    @ManyToOne
+    @JoinColumn(name = "MALOAI", nullable = false)
+    private LoaiPhi loaiPhi;
+
     @Column(name="TENDOTTHU",columnDefinition="VARCHAR(100)")
     private String tenDotThu;
     

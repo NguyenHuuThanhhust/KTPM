@@ -6,6 +6,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleGoogle = () => {
@@ -18,10 +19,37 @@ export default function Login() {
     window.location.href = "/auth/microsoft";
   };
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
-    console.log("Sign in", { email, password, keepSignedIn });
-    navigate("/dashboard");
+    setError("");
+    try {
+      const res = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // gửi kèm cookie session
+        body: JSON.stringify({
+          username: email, // dùng email làm tên đăng nhập
+          password,
+        }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 400) {
+          setError("Sai tài khoản hoặc mật khẩu.");
+          return;
+        }
+        throw new Error(`Lỗi đăng nhập: ${res.status}`);
+      }
+
+      const user = await res.json();
+      // Lưu thông tin người dùng (tùy ý dùng sau này)
+      localStorage.setItem("currentUser", JSON.stringify(user));
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("Không thể kết nối máy chủ. Vui lòng thử lại.");
+    }
   };
 
   const handleResetPassword = (e) => {
@@ -32,8 +60,7 @@ export default function Login() {
 
   const handleCreateAccount = (e) => {
     e.preventDefault();
-    console.log("Create account");
-    window.location.href = "/register";
+    navigate("/register");
   };
 
   const togglePasswordVisibility = () => {
@@ -137,7 +164,10 @@ export default function Login() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError("");
+                }}
               />
             </div>
 
@@ -149,7 +179,10 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
               />
               <button
                 type="button"
@@ -160,6 +193,12 @@ export default function Login() {
                 {showPassword ? "🙈" : "👁"}
               </button>
             </div>
+
+            {error && (
+              <p className="mb-4 text-sm text-red-400">
+                {error}
+              </p>
+            )}
 
             <div className="flex items-center justify-between mb-6">
               <label className="flex items-center gap-2">

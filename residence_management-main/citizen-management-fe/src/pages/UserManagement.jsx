@@ -45,7 +45,9 @@ export default function UserManagement() {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(API_BASE);
+      const res = await fetch(API_BASE, {
+        credentials: "include",
+      });
       if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
       const data = await res.json();
       setRecords(data || []);
@@ -94,6 +96,7 @@ export default function UserManagement() {
       const res = await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           maCanBo: Number(formData.maCanBo),
           tenDangNhap: formData.tenDangNhap,
@@ -125,6 +128,7 @@ export default function UserManagement() {
       const res = await fetch(`${API_BASE}/${selected.maTaiKhoan}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           maCanBo: Number(formData.maCanBo),
           tenDangNhap: formData.tenDangNhap,
@@ -151,7 +155,10 @@ export default function UserManagement() {
   const handleDelete = async (record) => {
     if (!confirm(`Xóa tài khoản ${record.tenDangNhap}?`)) return;
     try {
-      const res = await fetch(`${API_BASE}/${record.maTaiKhoan}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/${record.maTaiKhoan}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
       if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
       alert("Đã xóa tài khoản.");
       fetchList();

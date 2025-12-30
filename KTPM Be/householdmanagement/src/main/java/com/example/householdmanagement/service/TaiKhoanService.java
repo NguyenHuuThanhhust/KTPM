@@ -7,6 +7,7 @@ import com.example.householdmanagement.entity.TaiKhoan;
 import com.example.householdmanagement.repository.CanBoRepository;
 import com.example.householdmanagement.repository.TaiKhoanRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,9 @@ public class TaiKhoanService {
 
     @Autowired
     private CanBoRepository canBoRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<TaiKhoanResponse> layTatCaTaiKhoan() {
         return taiKhoanRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
@@ -49,7 +53,8 @@ public class TaiKhoanService {
         TaiKhoan tk = new TaiKhoan();
         tk.setMaCanBo(canBo);
         tk.setTenDangNhap(req.getTenDangNhap());
-        tk.setMatKhau(req.getMatKhau()); // NOTE: mật khẩu hiện lưu thô, nên băm khi production
+        // Hash password trước khi lưu
+        tk.setMatKhau(passwordEncoder.encode(req.getMatKhau()));
         tk.setVaiTro(req.getVaiTro());
         tk.setEmail(req.getEmail());
         if (req.getTrangThai() != null) tk.setTrangThai(req.getTrangThai());
@@ -73,7 +78,10 @@ public class TaiKhoanService {
             }
             tk.setTenDangNhap(req.getTenDangNhap());
         }
-        if (req.getMatKhau() != null) tk.setMatKhau(req.getMatKhau());
+        // Hash password nếu có thay đổi
+        if (req.getMatKhau() != null && !req.getMatKhau().trim().isEmpty()) {
+            tk.setMatKhau(passwordEncoder.encode(req.getMatKhau()));
+        }
         if (req.getVaiTro() != null) tk.setVaiTro(req.getVaiTro());
         if (req.getEmail() != null) {
             if (!req.getEmail().equals(tk.getEmail()) && taiKhoanRepository.existsByEmail(req.getEmail())) {

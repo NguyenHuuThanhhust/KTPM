@@ -46,7 +46,7 @@ export default function Login() {
 
         // Nếu có mã cán bộ -> trang quản lý, nếu không -> trang dành cho user thường
         if (response.user?.maCanBo) {
-          navigate("/user");
+          navigate("/dashboard");
         } else {
           navigate("/user");
         }

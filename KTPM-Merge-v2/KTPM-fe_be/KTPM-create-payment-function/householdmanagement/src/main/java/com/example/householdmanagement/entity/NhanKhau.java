@@ -17,7 +17,7 @@ public class NhanKhau {
     @Column(name="MANHANKHAU")
     private Long maNhanKhau;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="SOHOKHAU", nullable=false)
     private HoKhau hoKhau;
 

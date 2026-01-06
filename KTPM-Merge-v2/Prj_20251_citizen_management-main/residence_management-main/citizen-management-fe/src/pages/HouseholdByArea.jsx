@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, MapPinned, Users } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../headers/Header";
-import { householdRecords } from "../data/households";
+
+const API_BASE = "http://localhost:8080/api";
 
 const areaMeta = [
   { id: 1, name: "Tổ dân phố 1", gradient: "from-blue-500 to-indigo-500" },
@@ -16,19 +17,57 @@ const areaMeta = [
 
 export default function HouseholdByArea() {
   const [activeArea, setActiveArea] = useState(1);
+  const [households, setHouseholds] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchHouseholds = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(`${API_BASE}/hokhau`);
+        if (!response.ok) {
+          throw new Error(`Không thể tải danh sách hộ khẩu (status ${response.status})`);
+        }
+        const data = await response.json();
+        const mapped = (Array.isArray(data) ? data : []).map((hk) => {
+          const soHoKhau = hk.soHoKhau ?? hk.id;
+          return {
+            id: soHoKhau != null ? String(soHoKhau) : "",
+            soHoKhau,
+            headName: hk.chuHo || "Chưa có chủ hộ",
+            address: hk.diaChi || "",
+            area: hk.maXaPhuong || "",
+            members: hk.soNhanKhau ?? 0,
+            registeredAt: hk.ngayCap || null,
+          };
+        });
+        setHouseholds(mapped);
+      } catch (e) {
+        console.error("Error fetching households by area:", e);
+        setError(e.message || "Không thể tải danh sách hộ khẩu");
+        setHouseholds([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHouseholds();
+  }, []);
 
   const areaStats = useMemo(() => {
     return areaMeta.map((area) => {
-      const households = householdRecords.filter((record) => record.area === area.id);
-      const residents = households.reduce((sum, record) => sum + record.members, 0);
+      const areaHouseholds = households.filter((record) => Number(record.area || 0) === area.id);
+      const residents = areaHouseholds.reduce((sum, record) => sum + (record.members || 0), 0);
       return {
         ...area,
-        households,
-        householdsCount: households.length,
+        households: areaHouseholds,
+        householdsCount: areaHouseholds.length,
         residentsCount: residents,
       };
     });
-  }, []);
+  }, [households]);
 
   const selectedArea = areaStats.find((area) => area.id === activeArea);
 
@@ -110,7 +149,11 @@ export default function HouseholdByArea() {
                       Danh sách hộ khẩu - {selectedArea.name}
                     </h2>
                     <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2">
-                      {selectedArea.households.length ? (
+                      {loading ? (
+                        <p className="text-sm text-gray-400">Đang tải dữ liệu hộ khẩu...</p>
+                      ) : error ? (
+                        <p className="text-sm text-red-400">{error}</p>
+                      ) : selectedArea.households.length ? (
                         selectedArea.households.map((record) => (
                           <div key={record.id} className="rounded-2xl border border-white/10 p-4 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
@@ -119,10 +162,14 @@ export default function HouseholdByArea() {
                             </div>
                             <p className="text-xs text-gray-500">{record.address}</p>
                             <div className="flex items-center gap-3 text-xs text-gray-300 mt-2">
-                              <span className="px-2 py-0.5 rounded-full bg-white/10 text-white">{record.members} nhân khẩu</span>
-                              <span className="text-gray-400">
-                                {new Date(record.registeredAt).toLocaleDateString("vi-VN")}
+                              <span className="px-2 py-0.5 rounded-full bg-white/10 text-white">
+                                {record.members} nhân khẩu
                               </span>
+                              {record.registeredAt && (
+                                <span className="text-gray-400">
+                                  {new Date(record.registeredAt).toLocaleDateString("vi-VN")}
+                                </span>
+                              )}
                             </div>
                           </div>
                         ))

@@ -125,7 +125,18 @@ public class YeuCauThayDoiNhanKhauService {
                 
                 if (duLieuMap.containsKey("ngaySinh")) {
                     String ngaySinhStr = duLieuMap.get("ngaySinh").toString();
-                    nhanKhau.setNgaySinh(java.time.LocalDateTime.parse(ngaySinhStr));
+                    try {
+                        // Xử lý cả format date (2005-03-29) và datetime (2005-03-29T00:00:00)
+                        if (ngaySinhStr.length() == 10) {
+                            // Format date: 2005-03-29 -> chuyển thành LocalDateTime
+                            nhanKhau.setNgaySinh(java.time.LocalDate.parse(ngaySinhStr).atStartOfDay());
+                        } else {
+                            // Format datetime: 2005-03-29T00:00:00
+                            nhanKhau.setNgaySinh(java.time.LocalDateTime.parse(ngaySinhStr));
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Lỗi parse ngày sinh: " + ngaySinhStr + " - " + e.getMessage());
+                    }
                 }
                 
                 nhanKhau.setCmnd((String) duLieuMap.get("cmnd"));
@@ -152,7 +163,18 @@ public class YeuCauThayDoiNhanKhauService {
                 }
                 if (duLieuMap.containsKey("ngaySinh")) {
                     String ngaySinhStr = duLieuMap.get("ngaySinh").toString();
-                    nhanKhau.setNgaySinh(java.time.LocalDateTime.parse(ngaySinhStr));
+                    try {
+                        // Xử lý cả format date (2005-03-29) và datetime (2005-03-29T00:00:00)
+                        if (ngaySinhStr.length() == 10) {
+                            // Format date: 2005-03-29 -> chuyển thành LocalDateTime
+                            nhanKhau.setNgaySinh(java.time.LocalDate.parse(ngaySinhStr).atStartOfDay());
+                        } else {
+                            // Format datetime: 2005-03-29T00:00:00
+                            nhanKhau.setNgaySinh(java.time.LocalDateTime.parse(ngaySinhStr));
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Lỗi parse ngày sinh: " + ngaySinhStr + " - " + e.getMessage());
+                    }
                 }
                 if (duLieuMap.containsKey("cmnd")) {
                     nhanKhau.setCmnd((String) duLieuMap.get("cmnd"));

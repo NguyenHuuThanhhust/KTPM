@@ -6,7 +6,7 @@ const residenceTypeMap = {
   "kinh-doanh": { label: "Kinh doanh" },
 };
 
-export default function ResidentDetailDrawer({ resident, onClose }) {
+export default function ResidentDetailDrawer({ resident, onClose, onEdit }) {
   if (!resident) return null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -45,8 +45,30 @@ export default function ResidentDetailDrawer({ resident, onClose }) {
               <p className="text-white font-semibold mt-1">{row.value}</p>
             </div>
           ))}
+          {resident.trangThai && (
+            <div className="rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase text-gray-400">Trạng thái</p>
+              <p className="text-white font-semibold mt-1">
+                {resident.trangThai === "Thuong tru" ? "Thường trú" :
+                 resident.trangThai === "Moi sinh" ? "Mới sinh" :
+                 resident.trangThai === "Qua doi" ? "Qua đời" :
+                 resident.trangThai === "Chuyen di" ? "Chuyển đi" :
+                 resident.trangThai || "—"}
+              </p>
+            </div>
+          )}
         </div>
-        <button className="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-2xl">Chỉnh sửa nhân khẩu</button>
+        <button 
+          onClick={() => {
+            // Trigger edit modal - cần truyền callback từ parent
+            if (onEdit) {
+              onEdit(resident);
+            }
+          }}
+          className="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-2xl"
+        >
+          Chỉnh sửa nhân khẩu
+        </button>
       </div>
     </div>
   );

@@ -26,20 +26,20 @@ public class TaiKhoanController {
         return ResponseEntity.ok(taiKhoanService.layTatCaTaiKhoan());
     }
 
-    // Lấy tài khoản theo mã nhân khẩu (chủ hộ) - Phải đặt trước /{id}
+    // Lấy tất cả tài khoản theo mã nhân khẩu (chủ hộ) - Phải đặt trước /{id}
     @GetMapping("/nhan-khau/{maNhanKhau}")
     public ResponseEntity<?> layTaiKhoanTheoNhanKhau(@PathVariable Long maNhanKhau) {
         try {
-            List<TaiKhoanResponse> accounts = taiKhoanService.layTatCaTaiKhoan();
-            TaiKhoanResponse account = accounts.stream()
+            List<TaiKhoanResponse> allAccounts = taiKhoanService.layTatCaTaiKhoan();
+            List<TaiKhoanResponse> accounts = allAccounts.stream()
                     .filter(acc -> acc.getMaNhanKhau() != null && acc.getMaNhanKhau().equals(maNhanKhau))
-                    .findFirst()
-                    .orElse(null);
-            if (account == null) {
-                return ResponseEntity.ok(null); // Không có tài khoản
+                    .collect(java.util.stream.Collectors.toList());
+            if (accounts.isEmpty()) {
+                return ResponseEntity.ok(new java.util.ArrayList<>()); // Trả về danh sách rỗng
             }
-            return ResponseEntity.ok(account);
+            return ResponseEntity.ok(accounts);
         } catch (Exception e) {
+            logger.error("Error fetching accounts for maNhanKhau {}: {}", maNhanKhau, e.getMessage());
             return ResponseEntity.status(500).body("Lỗi: " + e.getMessage());
         }
     }

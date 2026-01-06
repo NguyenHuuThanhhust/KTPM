@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import { Filter, MapPin, Pencil, Trash2, Users, UserPlus, Key, X, CheckCircle, Clock } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../headers/Header";
-import { householdRecords } from "../data/households";
 import YeuCauXacThucModal from "../components/YeuCauXacThucModal";
 
 const API_BASE = "http://localhost:8080/api";
@@ -18,13 +17,17 @@ const areas = Array.from({ length: 7 }, (_, i) => i + 1);
 export default function QuanLiHoKhau() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ area: "all", type: "all" });
+  const [households, setHouseholds] = useState([]);
+  const [loadingHouseholds, setLoadingHouseholds] = useState(false);
+  const [householdError, setHouseholdError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [detailMode, setDetailMode] = useState("view");
   
-  // Quản lý tài khoản chủ hộ
-  const [accountInfo, setAccountInfo] = useState(null);
+  // Quản lý tài khoản chủ hộ (danh sách tài khoản)
+  const [accountList, setAccountList] = useState([]);
   const [accountLoading, setAccountLoading] = useState(false);
   const [showAccountForm, setShowAccountForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null); // Tài khoản đang chỉnh sửa
   const [accountForm, setAccountForm] = useState({
     tenDangNhap: "",
     matKhau: "",
@@ -41,96 +44,192 @@ export default function QuanLiHoKhau() {
   // Debug: Log khi showAccountForm thay đổi
   useEffect(() => {
     console.log("showAccountForm changed:", showAccountForm);
-    console.log("accountInfo:", accountInfo);
-  }, [showAccountForm, accountInfo]);
+    console.log("accountList:", accountList);
+  }, [showAccountForm, accountList]);
 
-  // Fetch yêu cầu chờ xác thực
-  const fetchYeuCauChoXacThuc = async () => {
+  // Lấy danh sách hộ khẩu từ backend
+  useEffect(() => {
+    const fetchHouseholds = async () => {
+      try {
+        setLoadingHouseholds(true);
+        setHouseholdError(null);
+        const response = await fetch(`${API_BASE}/hokhau`);
+        if (!response.ok) {
+          throw new Error(`Không thể tải danh sách hộ khẩu (status ${response.status})`);
+        }
+        const data = await response.json();
+        console.log("DEBUG: Dữ liệu hộ khẩu từ backend:", data);
+        const mapped = (Array.isArray(data) ? data : []).map((hk) => {
+          // Đảm bảo soHoKhau luôn được lấy từ hk.soHoKhau (không dùng hk.id)
+          const soHoKhau = hk.soHoKhau != null ? hk.soHoKhau : null;
+          if (soHoKhau == null) {
+            console.warn("WARNING: Hộ khẩu không có soHoKhau:", hk);
+            return null;
+          }
+          const headName = hk.chuHo && hk.chuHo.trim() !== "" ? hk.chuHo : "Chưa có chủ hộ";
+          console.log(`DEBUG: Hộ khẩu ${soHoKhau} - chuHo từ backend: "${hk.chuHo}" -> headName: "${headName}"`);
+          return {
+            id: soHoKhau != null ? String(soHoKhau) : "",
+            soHoKhau: soHoKhau, // Đảm bảo soHoKhau luôn là number hoặc null
+            headName: headName,
+            address: hk.diaChi || "",
+            ward: hk.tenXaPhuong || "",
+            area: hk.maXaPhuong || "",
+            members: hk.soNhanKhau ?? 0,
+            type: "thuong-tru", // Chưa có loại cư trú trong DTO, tạm coi là thường trú
+            registeredAt: hk.ngayCap || null,
+            note: hk.ghiChu || "",
+            phone: "", // Backend hiện chưa có số điện thoại hộ khẩu
+          };
+        }).filter(hk => hk != null); // Lọc bỏ các hộ khẩu null
+        console.log("DEBUG: Dữ liệu đã map:", mapped);
+        setHouseholds(mapped);
+      } catch (error) {
+        console.error("Error fetching households:", error);
+        setHouseholdError(error.message || "Không thể tải danh sách hộ khẩu");
+        setHouseholds([]);
+      } finally {
+        setLoadingHouseholds(false);
+      }
+    };
+
+    fetchHouseholds();
+  }, []);
+
+  // Fetch yêu cầu chờ xác thực cho hộ khẩu hiện tại
+  const fetchYeuCauChoXacThuc = async (soHoKhau, accountList) => {
+    if (!soHoKhau) {
+      setYeuCauList([]);
+      return;
+    }
+    
     try {
       setYeuCauLoading(true);
       const response = await fetch(`${API_BASE}/yeucau/trang-thai/CHO_XAC_THUC`);
       if (response.ok) {
         const data = await response.json();
-        setYeuCauList(Array.isArray(data) ? data : []);
+        const allYeuCau = Array.isArray(data) ? data : [];
+        
+        // Lấy danh sách mã tài khoản của chủ hộ
+        const maTaiKhoanList = accountList.map(acc => acc.maTaiKhoan);
+        
+        // Lọc yêu cầu: chỉ lấy những yêu cầu có soHoKhau trùng và maTaiKhoan nằm trong danh sách tài khoản của chủ hộ
+        const filteredYeuCau = allYeuCau.filter(yc => {
+          const ycSoHoKhau = yc.soHoKhau;
+          const ycMaTaiKhoan = yc.maTaiKhoan;
+          
+          // Kiểm tra soHoKhau trùng
+          const soHoKhauMatch = ycSoHoKhau != null && Number(ycSoHoKhau) === Number(soHoKhau);
+          
+          // Kiểm tra maTaiKhoan nằm trong danh sách tài khoản của chủ hộ
+          const maTaiKhoanMatch = ycMaTaiKhoan != null && maTaiKhoanList.includes(ycMaTaiKhoan);
+          
+          return soHoKhauMatch && maTaiKhoanMatch;
+        });
+        
+        console.log("fetchYeuCauChoXacThuc: soHoKhau:", soHoKhau, "accountList:", accountList);
+        console.log("fetchYeuCauChoXacThuc: All yeu cau:", allYeuCau.length, "Filtered:", filteredYeuCau.length);
+        
+        setYeuCauList(filteredYeuCau);
       }
     } catch (error) {
       console.error("Error fetching yeu cau:", error);
+      setYeuCauList([]);
     } finally {
       setYeuCauLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchYeuCauChoXacThuc();
-    // Refresh mỗi 30 giây
-    const interval = setInterval(fetchYeuCauChoXacThuc, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const filteredHouseholds = useMemo(() => {
-    return householdRecords.filter((household) => {
+    return households.filter((household) => {
       const matchesSearch =
         household.id.toLowerCase().includes(search.toLowerCase()) ||
         household.headName.toLowerCase().includes(search.toLowerCase()) ||
         household.address.toLowerCase().includes(search.toLowerCase());
-      const matchesArea = filters.area === "all" ? true : Number(filters.area) === household.area;
+      const matchesArea =
+        filters.area === "all"
+          ? true
+          : Number(filters.area) === Number(household.area || 0);
       const matchesType = filters.type === "all" ? true : filters.type === household.type;
       return matchesSearch && matchesArea && matchesType;
     });
-  }, [search, filters]);
+  }, [search, filters, households]);
 
   const stats = useMemo(() => {
-    const total = householdRecords.length;
-    const residents = householdRecords.reduce((sum, item) => sum + item.members, 0);
-    const thuongTru = householdRecords.filter((item) => item.type === "thuong-tru").length;
+    const total = households.length;
+    const residents = households.reduce((sum, item) => sum + (item.members || 0), 0);
+    const thuongTru = households.filter((item) => item.type === "thuong-tru").length;
     return [
       { label: "Tổng hộ khẩu", value: total, description: "Toàn phường La Khê" },
       { label: "Thường trú", value: thuongTru, description: "Hộ cư trú ổn định" },
       { label: "Tổng nhân khẩu", value: residents, description: "Số nhân khẩu đã khai báo" },
     ];
-  }, []);
+  }, [households]);
 
-  // Lấy thông tin tài khoản chủ hộ
-  const fetchAccountInfo = async (soHoKhau) => {
-    if (!soHoKhau) return;
+  // Lấy danh sách tài khoản của chủ hộ theo mã nhân khẩu
+  const fetchAccountList = async (soHoKhau) => {
+    if (!soHoKhau) {
+      console.log("fetchAccountList: soHoKhau is null/undefined");
+      return;
+    }
     try {
       setAccountLoading(true);
       setAccountError(null);
-      const response = await fetch(`${API_BASE}/taikhoan/ho-khau/${soHoKhau}`);
+      console.log("fetchAccountList: Fetching accounts for soHoKhau:", soHoKhau);
+      
+      // Bước 1: Lấy mã nhân khẩu của chủ hộ
+      const maNhanKhau = await getChuHoMaNhanKhau(soHoKhau);
+      if (!maNhanKhau) {
+        console.log("fetchAccountList: Không tìm thấy chủ hộ, không có tài khoản");
+        setAccountList([]);
+        setAccountLoading(false);
+        return;
+      }
+      
+      console.log("fetchAccountList: maNhanKhau của chủ hộ:", maNhanKhau);
+      
+      // Bước 2: Lấy danh sách tài khoản theo mã nhân khẩu
+      const response = await fetch(`${API_BASE}/taikhoan/nhan-khau/${maNhanKhau}`);
+      console.log("fetchAccountList: Response status:", response.status);
       
       if (response.ok) {
         const contentType = response.headers.get("content-type");
+        console.log("fetchAccountList: Content-Type:", contentType);
+        
         if (contentType && contentType.includes("application/json")) {
           try {
-            const text = await response.text();
-            // Nếu response là "null" (string), không có tài khoản
-            if (text.trim() === "null" || text.trim() === "") {
-              setAccountInfo(null);
-            } else {
-              const data = JSON.parse(text);
-              // Nếu data là null hoặc empty object, không có tài khoản
-              if (data === null || (typeof data === 'object' && Object.keys(data).length === 0)) {
-                setAccountInfo(null);
-              } else {
-                setAccountInfo(data);
-              }
-            }
+            const data = await response.json();
+            console.log("fetchAccountList: Parsed data:", data);
+            
+            // Đảm bảo data là mảng
+            const accounts = Array.isArray(data) ? data : (data ? [data] : []);
+            console.log("fetchAccountList: Setting accountList:", accounts);
+            setAccountList(accounts);
+            
+            // Sau khi có danh sách tài khoản, fetch yêu cầu cho hộ khẩu này
+            await fetchYeuCauChoXacThuc(soHoKhau, accounts);
           } catch (parseError) {
-            console.error("Error parsing JSON:", parseError);
-            setAccountInfo(null);
+            console.error("fetchAccountList: Error parsing JSON:", parseError);
+            setAccountList([]);
+            await fetchYeuCauChoXacThuc(soHoKhau, []);
           }
         } else {
-          // Nếu không phải JSON, không có tài khoản
-          setAccountInfo(null);
+          console.log("fetchAccountList: Response is not JSON");
+          setAccountList([]);
+          await fetchYeuCauChoXacThuc(soHoKhau, []);
         }
       } else {
-        // Response không OK, không có tài khoản
-        setAccountInfo(null);
+        console.log("fetchAccountList: Response not OK, status:", response.status);
+        const errorText = await response.text().catch(() => "");
+        console.log("fetchAccountList: Error response:", errorText);
+        setAccountList([]);
+        await fetchYeuCauChoXacThuc(soHoKhau, []);
       }
     } catch (error) {
-      console.error("Error fetching account info:", error);
-      setAccountError("Không thể tải thông tin tài khoản");
-      setAccountInfo(null);
+      console.error("fetchAccountList: Error fetching account list:", error);
+      setAccountError("Không thể tải danh sách tài khoản");
+      setAccountList([]);
+      await fetchYeuCauChoXacThuc(soHoKhau, []);
     } finally {
       setAccountLoading(false);
     }
@@ -139,6 +238,9 @@ export default function QuanLiHoKhau() {
   const openDetail = (household, mode = "view") => {
     setSelected(household);
     setDetailMode(mode);
+    // Reset yêu cầu khi mở hộ khẩu mới
+    setYeuCauList([]);
+    
     // Lấy thông tin tài khoản nếu có số hộ khẩu
     let soHoKhau;
     if (household.soHoKhau !== undefined && household.soHoKhau !== null) {
@@ -149,27 +251,182 @@ export default function QuanLiHoKhau() {
     }
     
     if (soHoKhau && !isNaN(soHoKhau)) {
-      fetchAccountInfo(soHoKhau);
+      // Fetch danh sách tài khoản, hàm này sẽ tự động fetch yêu cầu sau khi có accountList
+      fetchAccountList(soHoKhau);
     }
   };
 
   const closeDetail = () => {
     setSelected(null);
-    setAccountInfo(null);
+    setAccountList([]);
+    setYeuCauList([]);
     setShowAccountForm(false);
+    setEditingAccount(null);
     setAccountForm({ tenDangNhap: "", matKhau: "", email: "" });
     setAccountError(null);
   };
 
-  const handleDelete = (household) => {
-    if (confirm(`Bạn chắc chắn muốn xoá hộ khẩu ${household.id}?`)) {
-      alert("Đã xoá (mô phỏng).");
+  // Hàm refresh danh sách hộ khẩu
+  const refreshHouseholdList = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/hokhau`);
+      if (response.ok) {
+        const data = await response.json();
+        const mapped = (Array.isArray(data) ? data : []).map((hk) => {
+          const soHoKhau = hk.soHoKhau;
+          if (!soHoKhau) return null;
+          const headName = hk.chuHo && hk.chuHo.trim() !== "" ? hk.chuHo : "Chưa có chủ hộ";
+          return {
+            id: String(soHoKhau),
+            soHoKhau: soHoKhau,
+            headName: headName,
+            address: hk.diaChi || "",
+            ward: hk.tenXaPhuong || "",
+            area: hk.maXaPhuong || "",
+            members: hk.soNhanKhau ?? 0,
+            type: "thuong-tru",
+            registeredAt: hk.ngayCap || null,
+            note: hk.ghiChu || "",
+            phone: "",
+          };
+        }).filter(hk => hk != null);
+        setHouseholds(mapped);
+      }
+    } catch (error) {
+      console.error("Error refreshing household list:", error);
     }
   };
 
-  const handleUpdate = () => {
-    alert("Đã lưu thay đổi (mô phỏng).");
-    setDetailMode("view");
+  const handleDelete = async (household) => {
+    // Lấy mã sổ hộ khẩu (soHoKhau) - chỉ dùng soHoKhau, không dùng id
+    const soHoKhau = household.soHoKhau;
+    
+    if (!soHoKhau || (typeof soHoKhau !== 'number' && isNaN(Number(soHoKhau)))) {
+      alert("Không thể xác định mã sổ hộ khẩu để xóa. Vui lòng thử lại.");
+      console.error("Invalid soHoKhau:", household);
+      return;
+    }
+
+    const soHoKhauNumber = typeof soHoKhau === 'number' ? soHoKhau : Number(soHoKhau);
+    
+    if (!confirm(`Bạn chắc chắn muốn xóa hộ khẩu có mã số: ${soHoKhauNumber}?\n\nLưu ý: Chỉ có thể xóa hộ khẩu khi không còn nhân khẩu nào.`)) {
+      return;
+    }
+
+    try {
+      console.log("Xóa hộ khẩu với mã số:", soHoKhauNumber);
+      
+      // Gọi API xóa theo mã sổ hộ khẩu
+      const response = await fetch(`${API_BASE}/hokhau/${soHoKhauNumber}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const responseText = await response.text();
+      console.log("Response status:", response.status, "Response:", responseText);
+      
+      if (response.ok) {
+        // Xóa thành công
+        alert(`Xóa hộ khẩu có mã số ${soHoKhauNumber} thành công!`);
+        await refreshHouseholdList();
+        
+        // Đóng detail nếu đang mở
+        if (selected && selected.soHoKhau === soHoKhauNumber) {
+          closeDetail();
+        }
+      } else {
+        // Xóa thất bại
+        if (response.status === 404) {
+          // Hộ khẩu không tồn tại - refresh danh sách
+          alert(`Hộ khẩu có mã số ${soHoKhauNumber} không tồn tại. Đang làm mới danh sách...`);
+          await refreshHouseholdList();
+        } else if (response.status === 400) {
+          // Lỗi validation (ví dụ: còn nhân khẩu)
+          alert(responseText || `Không thể xóa hộ khẩu có mã số ${soHoKhauNumber}.`);
+        } else {
+          alert(`Lỗi khi xóa hộ khẩu: ${responseText || response.status}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting household:", error);
+      alert("Có lỗi xảy ra khi xóa hộ khẩu: " + error.message);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selected) return;
+
+    // Lấy mã sổ hộ khẩu (soHoKhau) - chỉ dùng soHoKhau, không dùng id
+    const soHoKhau = selected.soHoKhau;
+    
+    if (!soHoKhau || (typeof soHoKhau !== 'number' && isNaN(Number(soHoKhau)))) {
+      alert("Không thể xác định mã sổ hộ khẩu để cập nhật.");
+      console.error("Invalid soHoKhau:", selected);
+      return;
+    }
+
+    const soHoKhauNumber = typeof soHoKhau === 'number' ? soHoKhau : Number(soHoKhau);
+
+    try {
+      // Lấy giá trị từ form
+      const updateData = {
+        diaChi: selected.address || "",
+        ghiChu: selected.note || "",
+        maXaPhuong: selected.area && selected.area !== "" ? (isNaN(Number(selected.area)) ? null : Number(selected.area)) : null,
+      };
+
+      console.log("Cập nhật hộ khẩu với mã số:", soHoKhauNumber, "data:", updateData);
+      
+      const response = await fetch(`${API_BASE}/hokhau/${soHoKhauNumber}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      const responseText = await response.text();
+      console.log("Response status:", response.status, "Response:", responseText);
+      
+      if (response.ok) {
+        // Cập nhật thành công
+        alert(`Cập nhật hộ khẩu có mã số ${soHoKhauNumber} thành công!`);
+        await refreshHouseholdList();
+        
+        // Cập nhật selected với dữ liệu mới
+        const fetchResponse = await fetch(`${API_BASE}/hokhau/${soHoKhauNumber}`);
+        if (fetchResponse.ok) {
+          const data = await fetchResponse.json();
+          const updated = {
+            id: String(data.soHoKhau),
+            soHoKhau: data.soHoKhau,
+            headName: data.chuHo && data.chuHo.trim() !== "" ? data.chuHo : "Chưa có chủ hộ",
+            address: data.diaChi || "",
+            ward: data.tenXaPhuong || "",
+            area: data.maXaPhuong || "",
+            members: data.soNhanKhau ?? 0,
+            type: "thuong-tru",
+            registeredAt: data.ngayCap || null,
+            note: data.ghiChu || "",
+            phone: "",
+          };
+          setSelected(updated);
+        }
+        
+        setDetailMode("view");
+      } else {
+        // Cập nhật thất bại
+        if (response.status === 404) {
+          alert(`Hộ khẩu có mã số ${soHoKhauNumber} không tồn tại. Đang làm mới danh sách...`);
+          await refreshHouseholdList();
+        } else {
+          alert(responseText || `Cập nhật hộ khẩu thất bại (${response.status})`);
+        }
+      }
+    } catch (error) {
+      console.error("Error updating household:", error);
+      alert(error.message || "Có lỗi xảy ra khi cập nhật hộ khẩu");
+    }
   };
 
   // Lấy mã nhân khẩu của chủ hộ từ hộ khẩu
@@ -240,10 +497,10 @@ export default function QuanLiHoKhau() {
       return;
     }
 
-    if (!accountInfo && (!accountForm.matKhau || accountForm.matKhau.trim() === "")) {
-      setAccountError("Vui lòng nhập mật khẩu");
-      return;
-    }
+      if (!editingAccount && (!accountForm.matKhau || accountForm.matKhau.trim() === "")) {
+        setAccountError("Vui lòng nhập mật khẩu");
+        return;
+      }
 
     if (accountForm.matKhau && accountForm.matKhau.length < 6) {
       setAccountError("Mật khẩu phải có ít nhất 6 ký tự");
@@ -288,7 +545,7 @@ export default function QuanLiHoKhau() {
 
       console.log("Using maNhanKhau:", maNhanKhau);
 
-      if (accountInfo) {
+      if (editingAccount) {
         // Cập nhật tài khoản
         const updateData = {
           maNhanKhau: maNhanKhau,
@@ -301,7 +558,7 @@ export default function QuanLiHoKhau() {
           updateData.matKhau = accountForm.matKhau;
         }
 
-        const response = await fetch(`${API_BASE}/taikhoan/${accountInfo.maTaiKhoan}`, {
+        const response = await fetch(`${API_BASE}/taikhoan/${editingAccount.maTaiKhoan}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updateData),
@@ -313,6 +570,16 @@ export default function QuanLiHoKhau() {
         }
 
         alert("Cập nhật tài khoản thành công!");
+        
+        // Refresh danh sách tài khoản sau khi cập nhật
+        console.log("Refreshing account list after update for soHoKhau:", soHoKhau);
+        await fetchAccountList(soHoKhau);
+        
+        // Đợi một chút để đảm bảo backend đã cập nhật
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Refresh lại một lần nữa để chắc chắn
+        await fetchAccountList(soHoKhau);
       } else {
         // Tạo tài khoản mới
         const createData = {
@@ -376,10 +643,18 @@ export default function QuanLiHoKhau() {
         alert("Tạo tài khoản thành công! Mã tài khoản: " + result.maTaiKhoan);
       }
 
-      // Refresh thông tin tài khoản
-      const soHoKhauNum = parseInt(selected.id.replace(/\D/g, "")) || selected.id;
-      await fetchAccountInfo(soHoKhauNum);
+      // Refresh danh sách tài khoản - dùng lại soHoKhau đã lấy ở trên
+      console.log("Refreshing account list for soHoKhau:", soHoKhau);
+      await fetchAccountList(soHoKhau);
+      
+      // Đợi một chút để đảm bảo backend đã cập nhật
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refresh lại một lần nữa để chắc chắn
+      await fetchAccountList(soHoKhau);
+      
       setShowAccountForm(false);
+      setEditingAccount(null);
       setAccountForm({ tenDangNhap: "", matKhau: "", email: "" });
     } catch (error) {
       console.error("Error saving account:", error);
@@ -390,8 +665,8 @@ export default function QuanLiHoKhau() {
   };
 
   // Xóa tài khoản
-  const handleDeleteAccount = async () => {
-    if (!accountInfo || !confirm(`Bạn chắc chắn muốn xóa tài khoản "${accountInfo.tenDangNhap}"?`)) {
+  const handleDeleteAccount = async (account) => {
+    if (!account || !confirm(`Bạn chắc chắn muốn xóa tài khoản "${account.tenDangNhap}"?`)) {
       return;
     }
 
@@ -399,7 +674,7 @@ export default function QuanLiHoKhau() {
       setAccountLoading(true);
       setAccountError(null);
 
-      const response = await fetch(`${API_BASE}/taikhoan/${accountInfo.maTaiKhoan}`, {
+      const response = await fetch(`${API_BASE}/taikhoan/${account.maTaiKhoan}`, {
         method: "DELETE",
       });
 
@@ -408,7 +683,19 @@ export default function QuanLiHoKhau() {
       }
 
       alert("Xóa tài khoản thành công!");
-      setAccountInfo(null);
+      
+      // Refresh danh sách tài khoản
+      let soHoKhau;
+      if (selected.soHoKhau !== undefined && selected.soHoKhau !== null) {
+        soHoKhau = typeof selected.soHoKhau === 'number' ? selected.soHoKhau : parseInt(selected.soHoKhau);
+      } else if (selected.id) {
+        const parsed = parseInt(selected.id.replace(/\D/g, ""));
+        soHoKhau = isNaN(parsed) ? null : parsed;
+      }
+      
+      if (soHoKhau && !isNaN(soHoKhau)) {
+        await fetchAccountList(soHoKhau);
+      }
     } catch (error) {
       console.error("Error deleting account:", error);
       setAccountError(error.message || "Có lỗi xảy ra khi xóa tài khoản");
@@ -516,7 +803,19 @@ export default function QuanLiHoKhau() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredHouseholds.length ? (
+                      {loadingHouseholds ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-10 text-center text-gray-400">
+                            Đang tải dữ liệu hộ khẩu...
+                          </td>
+                        </tr>
+                      ) : householdError ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-10 text-center text-red-400">
+                            {householdError}
+                          </td>
+                        </tr>
+                      ) : filteredHouseholds.length ? (
                         filteredHouseholds.map((household) => {
                           const typeStyle = typeConfig[household.type];
                           return (
@@ -577,7 +876,7 @@ export default function QuanLiHoKhau() {
                 </div>
 
                 <div className="px-6 py-4 text-sm text-gray-400 border-t border-white/5">
-                  Hiển thị {filteredHouseholds.length} trên {householdRecords.length} hộ khẩu
+                  Hiển thị {filteredHouseholds.length} trên {households.length} hộ khẩu
                 </div>
               </section>
             </div>
@@ -602,21 +901,50 @@ export default function QuanLiHoKhau() {
 
             <div className="space-y-4 text-sm">
               <div className="rounded-2xl border border-white/10 p-4">
-                <p className="text-gray-400 text-xs uppercase">Địa chỉ</p>
-                <p className="text-white font-semibold mt-1">{selected.address}</p>
+                <p className="text-gray-400 text-xs uppercase mb-2">Địa chỉ</p>
+                {detailMode === "edit" ? (
+                  <input
+                    type="text"
+                    value={selected.address || ""}
+                    onChange={(e) => setSelected({ ...selected, address: e.target.value })}
+                    className="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="Nhập địa chỉ"
+                  />
+                ) : (
+                  <p className="text-white font-semibold mt-1">{selected.address || "—"}</p>
+                )}
+              </div>
+              <div className="rounded-2xl border border-white/10 p-4">
+                <p className="text-gray-400 text-xs uppercase mb-2">Tổ dân phố</p>
+                {detailMode === "edit" ? (
+                  <select
+                    value={selected.area || ""}
+                    onChange={(e) => setSelected({ ...selected, area: e.target.value })}
+                    className="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Chọn tổ dân phố</option>
+                    {areas.map((area) => (
+                      <option key={area} value={area}>
+                        Tổ dân phố {area}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-white font-semibold mt-1">Tổ {selected.area || "—"}</p>
+                )}
               </div>
               <div className="rounded-2xl border border-white/10 p-4">
                 <p className="text-gray-400 text-xs uppercase">Loại hộ</p>
-                <p className="text-white font-semibold mt-1">{typeConfig[selected.type].label}</p>
-                <p className="text-gray-500 text-xs mt-1">Đăng ký: {new Date(selected.registeredAt).toLocaleDateString("vi-VN")}</p>
+                <p className="text-white font-semibold mt-1">{typeConfig[selected.type]?.label || "—"}</p>
+                {selected.registeredAt && (
+                  <p className="text-gray-500 text-xs mt-1">
+                    Đăng ký: {new Date(selected.registeredAt).toLocaleDateString("vi-VN")}
+                  </p>
+                )}
               </div>
               <div className="rounded-2xl border border-white/10 p-4">
                 <p className="text-gray-400 text-xs uppercase">Số nhân khẩu</p>
-                <p className="text-white font-semibold mt-1">{selected.members} người</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 p-4">
-                <p className="text-gray-400 text-xs uppercase">Liên hệ</p>
-                <p className="text-white font-semibold mt-1">{selected.phone}</p>
+                <p className="text-white font-semibold mt-1">{selected.members || 0} người</p>
               </div>
 
               {/* Phần quản lý tài khoản chủ hộ */}
@@ -625,13 +953,19 @@ export default function QuanLiHoKhau() {
                   <div className="flex items-center gap-2">
                     <Key className="w-4 h-4 text-yellow-400" />
                     <p className="text-gray-400 text-xs uppercase">Tài khoản đăng nhập chủ hộ</p>
+                    {accountList.length > 0 && (
+                      <span className="bg-blue-500/20 text-blue-300 text-xs px-2 py-0.5 rounded-full">
+                        {accountList.length}
+                      </span>
+                    )}
                   </div>
-                  {!accountInfo && !showAccountForm && (
+                  {!showAccountForm && (
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("Button clicked - setting showAccountForm to true");
+                        setEditingAccount(null);
+                        setAccountForm({ tenDangNhap: "", matKhau: "", email: "" });
                         setShowAccountForm(true);
                       }}
                       className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-500 text-white rounded-lg cursor-pointer"
@@ -640,35 +974,12 @@ export default function QuanLiHoKhau() {
                       + Tạo tài khoản
                     </button>
                   )}
-                  {accountInfo && !showAccountForm && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setAccountForm({
-                            tenDangNhap: accountInfo.tenDangNhap || "",
-                            matKhau: "",
-                            email: accountInfo.email || "",
-                          });
-                          setShowAccountForm(true);
-                        }}
-                        className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={handleDeleteAccount}
-                        className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-500 text-white rounded-lg"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  )}
                 </div>
 
                 {/* Debug info */}
                 {process.env.NODE_ENV === 'development' && (
                   <div className="mt-2 text-xs text-gray-500">
-                    Debug: showAccountForm={String(showAccountForm)}, accountInfo={accountInfo ? 'exists' : 'null'}, accountLoading={String(accountLoading)}
+                    Debug: showAccountForm={String(showAccountForm)}, accountList.length={accountList.length}, accountLoading={String(accountLoading)}
                   </div>
                 )}
 
@@ -702,14 +1013,14 @@ export default function QuanLiHoKhau() {
                     </div>
                     <div>
                       <label className="block text-xs text-gray-400 mb-1">
-                        {accountInfo ? "Mật khẩu mới (để trống nếu không đổi)" : "Mật khẩu"}
+                        {editingAccount ? "Mật khẩu mới (để trống nếu không đổi)" : "Mật khẩu"}
                       </label>
                       <input
                         type="password"
                         value={accountForm.matKhau}
                         onChange={(e) => setAccountForm({ ...accountForm, matKhau: e.target.value })}
                         className="w-full bg-gray-900 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                        placeholder={accountInfo ? "Nhập mật khẩu mới" : "Nhập mật khẩu"}
+                        placeholder={editingAccount ? "Nhập mật khẩu mới" : "Nhập mật khẩu"}
                       />
                     </div>
                     <div>
@@ -734,7 +1045,7 @@ export default function QuanLiHoKhau() {
                         disabled={accountLoading}
                         className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {accountLoading ? "Đang xử lý..." : accountInfo ? "Cập nhật" : "Tạo tài khoản"}
+                        {accountLoading ? "Đang xử lý..." : editingAccount ? "Cập nhật" : "Tạo tài khoản"}
                       </button>
                       <button
                         type="button"
@@ -743,6 +1054,7 @@ export default function QuanLiHoKhau() {
                           e.stopPropagation();
                           console.log("Cancel button clicked");
                           setShowAccountForm(false);
+                          setEditingAccount(null);
                           setAccountForm({ tenDangNhap: "", matKhau: "", email: "" });
                           setAccountError(null);
                         }}
@@ -753,22 +1065,58 @@ export default function QuanLiHoKhau() {
                       </button>
                     </div>
                   </div>
-                ) : accountInfo ? (
-                  <div className="mt-3 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Tên đăng nhập:</span>
-                      <span className="text-white font-semibold">{accountInfo.tenDangNhap}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Email:</span>
-                      <span className="text-white">{accountInfo.email || "—"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Trạng thái:</span>
-                      <span className={`${accountInfo.trangThai === "DANG_HOAT_DONG" ? "text-green-400" : "text-yellow-400"}`}>
-                        {accountInfo.trangThai === "DANG_HOAT_DONG" ? "Đang hoạt động" : accountInfo.trangThai || "—"}
-                      </span>
-                    </div>
+                ) : accountList.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {accountList.map((account) => (
+                      <div key={account.maTaiKhoan} className="bg-gray-900/50 rounded-lg p-3 border border-white/5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Tên đăng nhập:</span>
+                              <span className="text-white font-semibold">{account.tenDangNhap}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Email:</span>
+                              <span className="text-white">{account.email || "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Trạng thái:</span>
+                              <span className={`${account.trangThai === "DANG_HOAT_DONG" ? "text-green-400" : "text-yellow-400"}`}>
+                                {account.trangThai === "DANG_HOAT_DONG" ? "Đang hoạt động" : account.trangThai || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Mã tài khoản:</span>
+                              <span className="text-gray-300 text-xs">#{account.maTaiKhoan}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingAccount(account);
+                                setAccountForm({
+                                  tenDangNhap: account.tenDangNhap || "",
+                                  matKhau: "",
+                                  email: account.email || "",
+                                });
+                                setShowAccountForm(true);
+                              }}
+                              className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded"
+                              title="Sửa"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAccount(account)}
+                              className="px-2 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm mt-2">Chưa có tài khoản đăng nhập</p>
@@ -822,12 +1170,16 @@ export default function QuanLiHoKhau() {
                 )}
               </div>
 
-              <label className="text-xs uppercase text-gray-400">Ghi chú</label>
-              <textarea
-                disabled={detailMode === "view"}
-                defaultValue={selected.note}
-                className="w-full rounded-2xl bg-gray-900 border border-white/10 text-gray-100 p-3 min-h-[120px] focus:outline-none focus:border-blue-500"
-              />
+              <div>
+                <label className="text-xs uppercase text-gray-400 block mb-2">Ghi chú</label>
+                <textarea
+                  disabled={detailMode === "view"}
+                  value={selected.note || ""}
+                  onChange={(e) => setSelected({ ...selected, note: e.target.value })}
+                  className="w-full rounded-2xl bg-gray-900 border border-white/10 text-gray-100 p-3 min-h-[120px] focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                  placeholder="Nhập ghi chú..."
+                />
+              </div>
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -859,7 +1211,20 @@ export default function QuanLiHoKhau() {
           setSelectedYeuCau(null);
         }}
         onUpdate={() => {
-          fetchYeuCauChoXacThuc();
+          // Refresh yêu cầu sau khi xác thực
+          if (selected) {
+            let soHoKhau;
+            if (selected.soHoKhau !== undefined && selected.soHoKhau !== null) {
+              soHoKhau = typeof selected.soHoKhau === 'number' ? selected.soHoKhau : parseInt(selected.soHoKhau);
+            } else if (selected.id) {
+              const parsed = parseInt(selected.id.replace(/\D/g, ""));
+              soHoKhau = isNaN(parsed) ? null : parsed;
+            }
+            
+            if (soHoKhau && !isNaN(soHoKhau)) {
+              fetchYeuCauChoXacThuc(soHoKhau, accountList);
+            }
+          }
         }}
       />
     </div>

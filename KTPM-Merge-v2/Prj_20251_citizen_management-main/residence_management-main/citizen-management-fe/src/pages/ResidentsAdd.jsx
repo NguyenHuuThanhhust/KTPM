@@ -11,6 +11,7 @@ const initialForm = {
   soHoKhau: "",
   quanHeVoiChuHo: "",
   ngheNghiep: "",
+  trangThai: "Moi sinh",
 };
 
 export default function ResidentsAdd() {
@@ -56,6 +57,7 @@ export default function ResidentsAdd() {
           ngaySinh: formData.ngaySinh,
           quanHeVoiChuHo: formData.quanHeVoiChuHo,
           ngheNghiep: formData.ngheNghiep,
+          trangThai: formData.trangThai,
         }),
       });
       if (!res.ok) throw new Error(`API lỗi: ${res.status}`);
@@ -186,6 +188,24 @@ export default function ResidentsAdd() {
                       />
                     </label>
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label className="text-sm text-gray-300">
+                      Trạng thái *
+                      <select
+                        className={`mt-2 w-full rounded-xl bg-gray-800/80 border px-3 py-2 focus:outline-none ${
+                          errors.trangThai ? "border-red-500" : "border-gray-700 focus:border-blue-500"
+                        }`}
+                        value={formData.trangThai}
+                        onChange={(e) => handleChange("trangThai", e.target.value)}
+                      >
+                        <option value="Moi sinh">Mới sinh</option>
+                        <option value="Thuong tru">Thường trú</option>
+                        <option value="Qua doi">Qua đời</option>
+                        <option value="Chuyen di">Chuyển đi</option>
+                      </select>
+                      {errors.trangThai && <span className="text-xs text-red-400">{errors.trangThai}</span>}
+                    </label>
+                  </div>
 
                   {submitError && <p className="text-sm text-red-400">{submitError}</p>}
 
@@ -225,6 +245,15 @@ export default function ResidentsAdd() {
                       <p>
                         <span className="text-gray-500">Nghề nghiệp:</span> {formData.ngheNghiep || "—"}
                       </p>
+                      <p>
+                        <span className="text-gray-500">Trạng thái:</span> {
+                          formData.trangThai === "Thuong tru" ? "Thường trú" :
+                          formData.trangThai === "Moi sinh" ? "Mới sinh" :
+                          formData.trangThai === "Qua doi" ? "Qua đời" :
+                          formData.trangThai === "Chuyen di" ? "Chuyển đi" :
+                          formData.trangThai || "—"
+                        }
+                      </p>
                     </div>
                   </div>
 
@@ -241,6 +270,7 @@ export default function ResidentsAdd() {
                         ngaySinh: formData.ngaySinh || "1980-03-20T00:00:00",
                         quanHeVoiChuHo: formData.quanHeVoiChuHo || "Chủ hộ",
                         ngheNghiep: formData.ngheNghiep || "Kỹ sư",
+                        trangThai: formData.trangThai || "Moi sinh",
                       }, null, 2)}</pre>
                     </div>
                   </div>

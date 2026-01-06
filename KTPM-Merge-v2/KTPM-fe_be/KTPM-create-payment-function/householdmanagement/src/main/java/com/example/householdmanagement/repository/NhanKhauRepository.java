@@ -11,6 +11,14 @@ import java.util.List;
 
 @Repository
 public interface NhanKhauRepository extends JpaRepository<NhanKhau, Long> {
+    
+    // Kiểm tra nhân khẩu có tồn tại không (chỉ kiểm tra ID, không load association) - MySQL
+    @Query(value = "SELECT EXISTS(SELECT 1 FROM NHANKHAU WHERE MANHANKHAU = :id)", nativeQuery = true)
+    boolean existsByIdNative(@Param("id") Long id);
+    
+    // Lấy thông tin cơ bản của nhân khẩu (chỉ các trường cần thiết, không load association) - MySQL
+    @Query(value = "SELECT HOTEN FROM NHANKHAU WHERE MANHANKHAU = :id LIMIT 1", nativeQuery = true)
+    String getHoTenById(@Param("id") Long id);
     List<NhanKhau> findByHoKhau_SoHoKhau(Long soHoKhau);
     
     List<NhanKhau> findByHoTenContainingIgnoreCase(String hoTen);

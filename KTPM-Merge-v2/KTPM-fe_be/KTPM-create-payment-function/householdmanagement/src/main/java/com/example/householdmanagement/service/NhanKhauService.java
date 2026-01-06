@@ -3,6 +3,8 @@ package com.example.householdmanagement.service;
 import com.example.householdmanagement.dto.*;
 import com.example.householdmanagement.entity.*;
 import com.example.householdmanagement.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class NhanKhauService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     private NhanKhauRepository nhanKhauRepository;
@@ -47,7 +52,9 @@ public class NhanKhauService {
         nhanKhau.setGioiTinh(request.getGioiTinh());
         nhanKhau.setNgaySinh(request.getNgaySinh());
         nhanKhau.setQuanHeVoiChuHo(request.getQuanHeVoiChuHo());
-        nhanKhau.setTrangThai("Thuong tru");
+        // Sử dụng trangThai từ request, nếu không có thì mặc định là "Moi sinh"
+        nhanKhau.setTrangThai(request.getTrangThai() != null && !request.getTrangThai().isEmpty() 
+            ? request.getTrangThai() : "Moi sinh");
         nhanKhau.setNgheNghiep(request.getNgheNghiep());
         nhanKhau.setCmnd(null);
         nhanKhau.setNoiThuongTruChuyenDen("mới sinh");
@@ -79,9 +86,13 @@ public class NhanKhauService {
         } else if ("Qua doi".equals(request.getLoaiThayDoi())) {
             nhanKhau.setGhiChu("Đã qua đời");
             nhanKhau.setTrangThai("Qua doi");
-        } else if ("Thay doi thong tin".equals(request.getLoaiThayDoi())) {
+        } else if ("Thay doi thong tin".equals(request.getLoaiThayDoi()) || "Cap nhat trang thai".equals(request.getLoaiThayDoi())) {
             if (request.getGhiChu() != null) {
                 nhanKhau.setGhiChu(request.getGhiChu());
+            }
+            // Cập nhật trạng thái nếu có trong request
+            if (request.getTrangThai() != null && !request.getTrangThai().isEmpty()) {
+                nhanKhau.setTrangThai(request.getTrangThai());
             }
         }
 
@@ -360,20 +371,107 @@ public class NhanKhauService {
         return hoKhauRepository.findById(soHoKhau).orElse(null);
     }
 
+    // Cập nhật thông tin nhân khẩu (tất cả các trường)
+    @Transactional
+    public NhanKhau capNhatNhanKhau(CapNhatNhanKhauRequest request) {
+        if (request.getMaNhanKhau() == null) {
+            throw new RuntimeException("Mã nhân khẩu không được để trống");
+        }
+        
+        // Kiểm tra tồn tại bằng native query để tránh vấn đề với JOIN phức tạp
+        if (!nhanKhauRepository.existsByIdNative(request.getMaNhanKhau())) {
+            throw new RuntimeException("Không tìm thấy nhân khẩu với mã: " + request.getMaNhanKhau());
+        }
+        
+        // Sử dụng getReferenceById để tránh load association, chỉ tạo proxy
+        NhanKhau nhanKhau = nhanKhauRepository.getReferenceById(request.getMaNhanKhau());
+
+        // Cập nhật tất cả các trường (không truy cập vào hoKhau association)
+        if (request.getHoTen() != null && !request.getHoTen().trim().isEmpty()) {
+            nhanKhau.setHoTen(request.getHoTen().trim());
+        }
+        if (request.getGioiTinh() != null && !request.getGioiTinh().trim().isEmpty()) {
+            nhanKhau.setGioiTinh(request.getGioiTinh().trim());
+        }
+        if (request.getNgaySinh() != null) {
+            nhanKhau.setNgaySinh(request.getNgaySinh());
+        }
+        if (request.getCmnd() != null) {
+            nhanKhau.setCmnd(request.getCmnd().trim());
+        }
+        if (request.getNgheNghiep() != null) {
+            nhanKhau.setNgheNghiep(request.getNgheNghiep().trim());
+        }
+        if (request.getQuanHeVoiChuHo() != null && !request.getQuanHeVoiChuHo().trim().isEmpty()) {
+            nhanKhau.setQuanHeVoiChuHo(request.getQuanHeVoiChuHo().trim());
+        }
+        if (request.getTrangThai() != null && !request.getTrangThai().trim().isEmpty()) {
+            nhanKhau.setTrangThai(request.getTrangThai().trim());
+        }
+
+        // Sử dụng EntityManager.merge() để tránh vấn đề với association
+        NhanKhau savedNhanKhau = entityManager.merge(nhanKhau);
+        entityManager.flush(); // Đảm bảo thay đổi được lưu ngay
+
+        // Ghi lịch sử thay đổi
+        try {
+            LichSuThayDoiNhanKhau lichSu = new LichSuThayDoiNhanKhau();
+            // Sử dụng getReferenceById để tránh load association khi ghi lịch sử
+            lichSu.setNhanKhau(nhanKhauRepository.getReferenceById(request.getMaNhanKhau()));
+            lichSu.setLoaiThayDoi("Cap nhat thong tin");
+            String hoTenForHistory = savedNhanKhau.getHoTen() != null ? savedNhanKhau.getHoTen() : "Không xác định";
+            lichSu.setNoiDungThayDoi("Cập nhật thông tin nhân khẩu: " + hoTenForHistory);
+            lichSu.setNgayThayDoi(LocalDateTime.now());
+            lichSu.setGhiChu("Cập nhật bởi quản trị viên");
+            lichSuThayDoiNhanKhauRepository.save(lichSu);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi ghi lịch sử thay đổi: " + e.getMessage());
+        }
+
+        return savedNhanKhau;
+    }
+
     @Transactional
     public void xoaNhanKhau(Long maNhanKhau) {
-        NhanKhau nhanKhau = nhanKhauRepository.findById(maNhanKhau)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân khẩu: " + maNhanKhau));
+        if (maNhanKhau == null) {
+            throw new RuntimeException("Mã nhân khẩu không được để trống");
+        }
+        
+        // Kiểm tra tồn tại bằng native query để tránh vấn đề với JOIN phức tạp
+        if (!nhanKhauRepository.existsByIdNative(maNhanKhau)) {
+            throw new RuntimeException("Không tìm thấy nhân khẩu với mã: " + maNhanKhau);
+        }
+        
+        // Lấy tên nhân khẩu bằng native query để ghi lịch sử (không load association)
+        String hoTen = "Không xác định";
+        try {
+            String hoTenFromDb = nhanKhauRepository.getHoTenById(maNhanKhau);
+            if (hoTenFromDb != null && !hoTenFromDb.trim().isEmpty()) {
+                hoTen = hoTenFromDb.trim();
+            }
+            
+            // Ghi lịch sử thay đổi trước khi xóa
+            try {
+                // Sử dụng getReferenceById để tạo proxy, không load dữ liệu
+                NhanKhau nhanKhauProxy = nhanKhauRepository.getReferenceById(maNhanKhau);
+                LichSuThayDoiNhanKhau lichSu = new LichSuThayDoiNhanKhau();
+                lichSu.setNhanKhau(nhanKhauProxy);
+                lichSu.setLoaiThayDoi("Xoa");
+                lichSu.setNoiDungThayDoi("Xóa nhân khẩu: " + hoTen + " (Mã: " + maNhanKhau + ")");
+                lichSu.setNgayThayDoi(LocalDateTime.now());
+                lichSu.setGhiChu("Xóa bởi quản trị viên");
+                lichSuThayDoiNhanKhauRepository.save(lichSu);
+            } catch (Exception e) {
+                // Log lỗi nhưng vẫn tiếp tục xóa
+                System.err.println("Lỗi khi ghi lịch sử xóa nhân khẩu: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            // Nếu không lấy được tên, vẫn tiếp tục xóa
+            System.err.println("Không thể lấy tên nhân khẩu trước khi xóa: " + e.getMessage());
+        }
 
-        LichSuThayDoiNhanKhau lichSu = new LichSuThayDoiNhanKhau();
-        lichSu.setNhanKhau(nhanKhau);
-        lichSu.setLoaiThayDoi("Xoa");
-        lichSu.setNoiDungThayDoi("Xóa nhân khẩu: " + nhanKhau.getHoTen() + " (id=" + maNhanKhau + ")");
-        lichSu.setNgayThayDoi(LocalDateTime.now());
-        lichSu.setGhiChu("Xóa bởi hệ thống hoặc người dùng");
-        lichSuThayDoiNhanKhauRepository.save(lichSu);
-
-        nhanKhauRepository.delete(nhanKhau);
+        // Xóa nhân khẩu trực tiếp bằng ID, không cần load entity
+        nhanKhauRepository.deleteById(maNhanKhau);
     }
 
     public List<ChuHoSearchDTO> timKiemChuHo(String query) {

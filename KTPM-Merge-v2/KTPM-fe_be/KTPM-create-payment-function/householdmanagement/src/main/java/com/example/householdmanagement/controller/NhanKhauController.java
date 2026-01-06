@@ -7,6 +7,7 @@ import com.example.householdmanagement.service.ThongKeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/nhankhau")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS, RequestMethod.PATCH}, allowedHeaders = "*")
 public class NhanKhauController {
 
     @Autowired
@@ -254,5 +255,53 @@ public class NhanKhauController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    // Cập nhật thông tin nhân khẩu (tất cả các trường)
+    @PutMapping("/cap-nhat")
+    public ResponseEntity<?> capNhatNhanKhau(@RequestBody CapNhatNhanKhauRequest request) {
+        try {
+            if (request.getMaNhanKhau() == null) {
+                return ResponseEntity.badRequest().body("Mã nhân khẩu không được để trống");
+            }
+            NhanKhau nhanKhau = nhanKhauService.capNhatNhanKhau(request);
+            return ResponseEntity.ok(nhanKhau);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
+        }
+    }
+
+    // Xóa nhân khẩu
+    @DeleteMapping(value = "/{maNhanKhau}", produces = "application/json")
+    public ResponseEntity<?> xoaNhanKhau(@PathVariable Long maNhanKhau) {
+        try {
+            if (maNhanKhau == null) {
+                return ResponseEntity.badRequest().body("Mã nhân khẩu không được để trống");
+            }
+            nhanKhauService.xoaNhanKhau(maNhanKhau);
+            return ResponseEntity.ok().body("{\"message\":\"Xóa nhân khẩu thành công\"}");
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Lỗi server: " + e.getMessage());
+        }
+    }
+
+    // Xử lý OPTIONS preflight request cho DELETE
+    @RequestMapping(value = "/{maNhanKhau}", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptionsDelete(@PathVariable Long maNhanKhau) {
+        return ResponseEntity.ok().build();
+    }
+
+    // Xử lý OPTIONS preflight request cho PUT cap-nhat
+    @RequestMapping(value = "/cap-nhat", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptionsUpdate() {
+        return ResponseEntity.ok().build();
     }
 }

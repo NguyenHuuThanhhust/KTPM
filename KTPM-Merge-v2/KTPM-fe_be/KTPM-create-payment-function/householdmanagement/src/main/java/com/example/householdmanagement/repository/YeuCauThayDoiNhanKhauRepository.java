@@ -13,3 +13,8 @@ public interface YeuCauThayDoiNhanKhauRepository extends JpaRepository<YeuCauTha
     List<YeuCauThayDoiNhanKhau> findByTrangThaiOrderByNgayTaoDesc(String trangThai);
 }
 
+
+
+
+
+

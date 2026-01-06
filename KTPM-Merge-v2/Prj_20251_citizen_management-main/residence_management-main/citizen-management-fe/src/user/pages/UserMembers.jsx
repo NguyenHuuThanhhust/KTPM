@@ -5,6 +5,7 @@ import ResidentDetailModal from "../components/ResidentDetailModal";
 import AddResidentModal from "../components/AddResidentModal";
 import residentService from "../services/resident.service";
 import householdService from "../services/household.service";
+import { Pencil, Trash2, Eye } from "lucide-react";
 
 export default function UserMembers() {
   const { user } = useAuth();
@@ -61,6 +62,30 @@ export default function UserMembers() {
 
   const handleOpenDetail = (resident) => {
     setSelectedResident(resident);
+    setIsDetailOpen(true);
+  };
+
+  const [editMode, setEditMode] = useState(null); // "edit" hoặc "delete"
+
+  const handleEdit = (resident, e) => {
+    if (e) {
+      e.stopPropagation(); // Ngăn chặn sự kiện click lan truyền đến row
+      e.preventDefault();
+    }
+    console.log("Edit clicked for resident:", resident);
+    setSelectedResident(resident);
+    setEditMode("edit");
+    setIsDetailOpen(true);
+  };
+
+  const handleDelete = (resident, e) => {
+    if (e) {
+      e.stopPropagation(); // Ngăn chặn sự kiện click lan truyền đến row
+      e.preventDefault();
+    }
+    console.log("Delete clicked for resident:", resident);
+    setSelectedResident(resident);
+    setEditMode("delete");
     setIsDetailOpen(true);
   };
 
@@ -133,36 +158,101 @@ export default function UserMembers() {
                     Nghề nghiệp
                   </th>
                   <th className="text-left py-2 font-medium">Loại cư trú</th>
+                  {user?.role === "User" && (
+                    <th className="text-center py-2 font-medium">Thao tác</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {members.map((m) => (
                   <tr
                     key={m.maNhanKhau || m.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => handleOpenDetail(m)}
+                    className="border-b border-gray-100 hover:bg-gray-50"
                   >
-                    <td className="py-2 text-gray-900">{m.hoTen || m.name}</td>
-                    <td className="py-2 text-gray-700">
+                    <td 
+                      className="py-2 text-gray-900 cursor-pointer"
+                      onClick={() => handleOpenDetail(m)}
+                    >
+                      {m.hoTen || m.name}
+                    </td>
+                    <td 
+                      className="py-2 text-gray-700 cursor-pointer"
+                      onClick={() => handleOpenDetail(m)}
+                    >
                       {m.soCCCD || m.cccd || "—"}
                     </td>
-                    <td className="py-2 text-gray-600 hidden sm:table-cell">
+                    <td 
+                      className="py-2 text-gray-600 hidden sm:table-cell cursor-pointer"
+                      onClick={() => handleOpenDetail(m)}
+                    >
                       {m.ngaySinh || m.birthDate || "—"}
                     </td>
-                    <td className="py-2 text-gray-600 hidden sm:table-cell">
+                    <td 
+                      className="py-2 text-gray-600 hidden sm:table-cell cursor-pointer"
+                      onClick={() => handleOpenDetail(m)}
+                    >
                       {m.ngheNghiep || m.occupation || "—"}
                     </td>
-                    <td className="py-2">
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-300">
-                        {m.loaiCuTru === "Thường trú" ||
-                        m.residenceType === "thuong-tru"
+                    <td 
+                      className="py-2 cursor-pointer"
+                      onClick={() => handleOpenDetail(m)}
+                    >
+                      <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                        m.trangThai === "Thuong tru" || m.loaiCuTru === "Thường trú" || m.residenceType === "thuong-tru"
+                          ? "bg-blue-100 text-blue-700 border-blue-300"
+                          : m.trangThai === "Moi sinh"
+                          ? "bg-green-100 text-green-700 border-green-300"
+                          : m.trangThai === "Qua doi"
+                          ? "bg-gray-100 text-gray-700 border-gray-300"
+                          : m.trangThai === "Chuyen di"
+                          ? "bg-orange-100 text-orange-700 border-orange-300"
+                          : m.loaiCuTru === "Tạm trú" || m.residenceType === "tam-tru"
+                          ? "bg-amber-100 text-amber-700 border-amber-300"
+                          : "bg-gray-100 text-gray-700 border-gray-300"
+                      }`}>
+                        {m.trangThai === "Thuong tru" ? "Thường trú" :
+                         m.trangThai === "Moi sinh" ? "Mới sinh" :
+                         m.trangThai === "Qua doi" ? "Qua đời" :
+                         m.trangThai === "Chuyen di" ? "Chuyển đi" :
+                         m.loaiCuTru === "Thường trú" || m.residenceType === "thuong-tru"
                           ? "Thường trú"
-                          : m.loaiCuTru === "Tạm trú" ||
-                            m.residenceType === "tam-tru"
+                          : m.loaiCuTru === "Tạm trú" || m.residenceType === "tam-tru"
                           ? "Tạm trú"
-                          : "Khác"}
+                          : m.trangThai || "Khác"}
                       </span>
                     </td>
+                    {user?.role === "User" && (
+                      <td className="py-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => handleOpenDetail(m)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Xem chi tiết"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => handleEdit(m, e)}
+                            className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded-lg transition"
+                            title="Sửa nhân khẩu"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          {/* Chỉ hiển thị nút Xóa nếu không phải chủ hộ */}
+                          {m.quanHeVoiChuHo !== "Chủ hộ" && 
+                           m.quanHeVoiChuHo !== "Chu ho" &&
+                           m.quanHeVoiChuHo !== "Ch? h?" && (
+                            <button
+                              onClick={(e) => handleDelete(m, e)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Xóa nhân khẩu"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -174,17 +264,21 @@ export default function UserMembers() {
         <ResidentDetailModal
           resident={selectedResident}
           isOpen={isDetailOpen}
+          initialMode={editMode}
           onClose={() => {
             setIsDetailOpen(false);
             setSelectedResident(null);
+            setEditMode(null);
           }}
           onUpdate={() => {
             // Refresh danh sách nhân khẩu
             fetchMembers();
+            setEditMode(null);
           }}
           onDelete={() => {
             // Refresh danh sách nhân khẩu
             fetchMembers();
+            setEditMode(null);
           }}
         />
         <AddResidentModal

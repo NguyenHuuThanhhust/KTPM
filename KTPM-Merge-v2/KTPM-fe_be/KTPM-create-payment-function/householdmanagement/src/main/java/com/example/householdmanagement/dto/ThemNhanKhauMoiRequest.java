@@ -11,4 +11,5 @@ public class ThemNhanKhauMoiRequest {
     private LocalDateTime ngaySinh;
     private String quanHeVoiChuHo;
     private String ngheNghiep; // thêm để có thể lưu nghề nghiệp khi tạo
+    private String trangThai; // "Moi sinh", "Thuong tru", "Qua doi", "Chuyen di"
 }

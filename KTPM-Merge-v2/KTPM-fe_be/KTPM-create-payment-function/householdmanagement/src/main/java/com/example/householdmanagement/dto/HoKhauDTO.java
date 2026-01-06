@@ -16,3 +16,8 @@ public class HoKhauDTO {
     private Long maNhanKhauChuHo; // Mã nhân khẩu chủ hộ
 }
 
+
+
+
+
+

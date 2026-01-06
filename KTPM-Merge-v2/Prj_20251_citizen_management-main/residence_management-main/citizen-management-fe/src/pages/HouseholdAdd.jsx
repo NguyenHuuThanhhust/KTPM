@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ClipboardList, Plus, UserPlus } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../headers/Header";
-import { residentPool } from "../data/households";
+
+const API_BASE = "http://localhost:8080/api";
 
 const householdTypes = [
   { value: "thuong-tru", label: "Hộ thường trú" },
@@ -21,14 +22,46 @@ export default function HouseholdAdd() {
   });
   const [members, setMembers] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [residents, setResidents] = useState([]);
+  const [loadingResidents, setLoadingResidents] = useState(false);
+  const [residentError, setResidentError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchResidents = async () => {
+      try {
+        setLoadingResidents(true);
+        setResidentError(null);
+        const response = await fetch(`${API_BASE}/nhankhau`);
+        if (!response.ok) {
+          throw new Error(`Không thể tải danh sách nhân khẩu (status ${response.status})`);
+        }
+        const data = await response.json();
+        const mapped = (Array.isArray(data) ? data : []).map((nk) => ({
+          id: nk.maNhanKhau,
+          name: nk.hoTen,
+          cccd: nk.cmnd,
+        }));
+        setResidents(mapped);
+      } catch (e) {
+        console.error("Error fetching residents:", e);
+        setResidentError(e.message || "Không thể tải danh sách nhân khẩu");
+        setResidents([]);
+      } finally {
+        setLoadingResidents(false);
+      }
+    };
+
+    fetchResidents();
+  }, []);
 
   const headOptions = useMemo(
     () =>
-      residentPool.map((resident) => ({
+      residents.map((resident) => ({
         value: resident.id,
-        label: `${resident.name} (${resident.cccd})`,
+        label: `${resident.name} (${resident.cccd || "Không có CMND"})`,
       })),
-    []
+    [residents]
   );
 
   const handleChange = (key, value) => {
@@ -41,14 +74,44 @@ export default function HouseholdAdd() {
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.bookNumber || !formData.headId || !formData.address || !formData.area) {
       alert("Vui lòng nhập đầy đủ thông tin bắt buộc.");
       return;
     }
-    setSubmitted(true);
-    alert("Hộ khẩu mới đã được tạo (mô phỏng).");
+    try {
+      setSaving(true);
+      // Gọi API tạo hộ khẩu mới
+      const payload = {
+        soHoKhau: Number(formData.bookNumber),
+        diaChi: formData.address,
+        ghiChu: formData.note || "",
+        maXaPhuong: Number(formData.area),
+        maNhanKhauChuHo: Number(formData.headId),
+      };
+      
+      console.log("Creating household with payload:", payload);
+
+      const response = await fetch(`${API_BASE}/hokhau`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Không thể tạo hộ khẩu (status ${response.status})`);
+      }
+
+      setSubmitted(true);
+      alert("Hộ khẩu mới đã được tạo thành công.");
+    } catch (err) {
+      console.error("Error creating household:", err);
+      alert(err.message || "Có lỗi xảy ra khi tạo hộ khẩu.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -122,11 +185,15 @@ export default function HouseholdAdd() {
                         onChange={(e) => handleChange("headId", e.target.value)}
                       >
                         <option value="">-- Chọn nhân khẩu --</option>
-                        {headOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
+                        {loadingResidents && <option>Đang tải danh sách nhân khẩu...</option>}
+                        {residentError && <option disabled>{residentError}</option>}
+                        {!loadingResidents &&
+                          !residentError &&
+                          headOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                       </select>
                     </label>
 
@@ -178,33 +245,42 @@ export default function HouseholdAdd() {
                     <div className="space-y-3">
                       <p className="text-sm font-semibold text-gray-200">Thêm thành viên trong hộ khẩu</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-                        {residentPool.map((resident) => (
-                          <label
-                            key={resident.id}
-                            className={`rounded-2xl border px-4 py-3 flex flex-col gap-1 cursor-pointer ${
-                              members.includes(resident.id)
-                                ? "border-emerald-500 bg-emerald-500/10 text-white"
-                                : "border-gray-700 bg-gray-800/50 text-gray-300"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="hidden"
-                              checked={members.includes(resident.id)}
-                              onChange={() => toggleMember(resident.id)}
-                            />
-                            <span className="font-semibold">{resident.name}</span>
-                            <span className="text-xs text-gray-400">{resident.cccd}</span>
-                          </label>
-                        ))}
+                        {loadingResidents && (
+                          <p className="text-xs text-gray-400 col-span-2">Đang tải danh sách nhân khẩu...</p>
+                        )}
+                        {residentError && (
+                          <p className="text-xs text-red-400 col-span-2">{residentError}</p>
+                        )}
+                        {!loadingResidents &&
+                          !residentError &&
+                          residents.map((resident) => (
+                            <label
+                              key={resident.id}
+                              className={`rounded-2xl border px-4 py-3 flex flex-col gap-1 cursor-pointer ${
+                                members.includes(resident.id)
+                                  ? "border-emerald-500 bg-emerald-500/10 text-white"
+                                  : "border-gray-700 bg-gray-800/50 text-gray-300"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="hidden"
+                                checked={members.includes(resident.id)}
+                                onChange={() => toggleMember(resident.id)}
+                              />
+                              <span className="font-semibold">{resident.name}</span>
+                              <span className="text-xs text-gray-400">{resident.cccd}</span>
+                            </label>
+                          ))}
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-2xl flex items-center justify-center gap-2"
+                      disabled={saving}
+                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl flex items-center justify-center gap-2"
                     >
-                      <Plus className="w-5 h-5" /> Tạo hộ khẩu
+                      <Plus className="w-5 h-5" /> {saving ? "Đang lưu..." : "Tạo hộ khẩu"}
                     </button>
                   </form>
                 </div>

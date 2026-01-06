@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, Home, Users, History, User } from 'lucide-react';
+import { ChevronDown, Home, Users, History, User, DollarSign } from 'lucide-react';
 
 export default function UserSidebar() {
   const location = useLocation();
@@ -36,6 +36,14 @@ export default function UserSidebar() {
       icon: Users,
       submenu: null,
       link: '/user/members',
+      type: 'single'
+    },
+    {
+      id: 'payment',
+      name: 'Đóng phí',
+      icon: DollarSign,
+      submenu: null,
+      link: '/user/payment',
       type: 'single'
     },
     {

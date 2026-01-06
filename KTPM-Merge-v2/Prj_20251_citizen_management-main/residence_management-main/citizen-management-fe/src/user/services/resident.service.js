@@ -38,3 +38,8 @@ const residentService = {
 
 export default residentService;
 
+
+
+
+
+

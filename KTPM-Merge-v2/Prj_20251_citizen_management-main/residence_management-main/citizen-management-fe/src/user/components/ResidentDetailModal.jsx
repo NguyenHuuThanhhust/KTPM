@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = "http://localhost:8080/api";
 
-export default function ResidentDetailModal({ resident, isOpen, onClose, onUpdate, onDelete }) {
+export default function ResidentDetailModal({ resident, isOpen, onClose, onUpdate, onDelete, initialMode = null }) {
   const { user } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -15,27 +15,66 @@ export default function ResidentDetailModal({ resident, isOpen, onClose, onUpdat
     cmnd: "",
     ngheNghiep: "",
     quanHeVoiChuHo: "",
+    trangThai: "Thuong tru",
     ghiChu: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
 
-  if (!isOpen || !resident) return null;
-
   // Initialize form data when resident changes
   useEffect(() => {
-    if (resident) {
+    if (resident && isOpen) {
       setFormData({
         hoTen: resident.hoTen || resident.name || "",
         gioiTinh: resident.gioiTinh || resident.gender || "",
-        ngaySinh: resident.ngaySinh || resident.birthDate || "",
-        cmnd: resident.cmnd || resident.cccd || "",
+                ngaySinh: resident.ngaySinh 
+                  ? (resident.ngaySinh.includes("T") 
+                      ? resident.ngaySinh.split("T")[0] 
+                      : resident.ngaySinh)
+                  : (resident.birthDate 
+                      ? (resident.birthDate.includes("T") 
+                          ? resident.birthDate.split("T")[0] 
+                          : resident.birthDate)
+                      : ""),
+        cmnd: resident.cmnd || resident.cccd || resident.soCCCD || "",
         ngheNghiep: resident.ngheNghiep || resident.occupation || "",
         quanHeVoiChuHo: resident.quanHeVoiChuHo || "",
+        trangThai: resident.trangThai || "Thuong tru",
         ghiChu: "",
       });
     }
-  }, [resident]);
+  }, [resident, isOpen]);
+
+  // Set mode when modal opens or initialMode changes
+  useEffect(() => {
+    if (isOpen && resident) {
+      if (initialMode === "edit") {
+        setIsEditMode(true);
+        setIsDeleteMode(false);
+      } else if (initialMode === "delete") {
+        setIsDeleteMode(true);
+        setIsEditMode(false);
+      } else {
+        setIsEditMode(false);
+        setIsDeleteMode(false);
+      }
+    } else if (!isOpen) {
+      // Reset modes when modal closes
+      setIsEditMode(false);
+      setIsDeleteMode(false);
+    }
+  }, [isOpen, initialMode, resident]);
+
+  // Debug logging
+  useEffect(() => {
+    if (isOpen) {
+      console.log("ResidentDetailModal opened:", { isOpen, resident, initialMode, isEditMode, isDeleteMode });
+    }
+  }, [isOpen, resident, initialMode, isEditMode, isDeleteMode]);
+
+  if (!isOpen || !resident) {
+    return null;
+  }
 
   const handleEdit = () => {
     setIsEditMode(true);
@@ -137,8 +176,8 @@ export default function ResidentDetailModal({ resident, isOpen, onClose, onUpdat
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative z-[10000]">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold">Chi tiết nhân khẩu</h2>
           <button
@@ -267,6 +306,20 @@ export default function ResidentDetailModal({ resident, isOpen, onClose, onUpdat
                   <option value="Khác">Khác</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Trạng thái *</label>
+                <select
+                  required
+                  className="w-full px-3 py-2 border rounded-lg"
+                  value={formData.trangThai}
+                  onChange={(e) => setFormData({ ...formData, trangThai: e.target.value })}
+                >
+                  <option value="Thuong tru">Thường trú</option>
+                  <option value="Moi sinh">Mới sinh</option>
+                  <option value="Qua doi">Qua đời</option>
+                  <option value="Chuyen di">Chuyển đi</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Ghi chú</label>
@@ -335,6 +388,16 @@ export default function ResidentDetailModal({ resident, isOpen, onClose, onUpdat
                 <div>
                   <p className="text-sm text-gray-500">Quan hệ với chủ hộ</p>
                   <p className="font-medium">{resident.quanHeVoiChuHo || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Trạng thái</p>
+                  <p className="font-medium">
+                    {resident.trangThai === "Thuong tru" ? "Thường trú" :
+                     resident.trangThai === "Moi sinh" ? "Mới sinh" :
+                     resident.trangThai === "Qua doi" ? "Qua đời" :
+                     resident.trangThai === "Chuyen di" ? "Chuyển đi" :
+                     resident.trangThai || "—"}
+                  </p>
                 </div>
               </div>
             </div>

@@ -34,6 +34,7 @@ import UserHousehold from "./user/pages/UserHousehold";
 import UserMembers from "./user/pages/UserMembers";
 import UserHistory from "./user/pages/UserHistory";
 import UserProfile from "./user/pages/UserProfile";
+import UserPayment from "./user/pages/UserPayment";
 
 // Protected Route Component
 function ProtectedRoute({ children, allowedRoles }) {
@@ -108,6 +109,14 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={["User"]}>
             <UserProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/payment"
+        element={
+          <ProtectedRoute allowedRoles={["User"]}>
+            <UserPayment />
           </ProtectedRoute>
         }
       />

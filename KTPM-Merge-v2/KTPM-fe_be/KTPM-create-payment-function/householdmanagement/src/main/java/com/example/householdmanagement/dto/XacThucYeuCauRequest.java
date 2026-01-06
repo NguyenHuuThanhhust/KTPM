@@ -10,3 +10,8 @@ public class XacThucYeuCauRequest {
     private String lyDoTuChoi; // Lý do từ chối (nếu có)
 }
 
+
+
+
+
+

@@ -74,3 +74,8 @@ cd KTPM-fe_be/KTPM-create-payment-function/householdmanagement
 - **Cán bộ quản lý thu-chi:** cb_thuchi / 123456
 - **User (Chủ hộ):** user1 / 123456, user2 / 123456
 
+
+
+
+
+

@@ -82,14 +82,10 @@ CREATE TABLE CANBO (
 CREATE TABLE TAIKHOAN (
     MATAIKHOAN INT IDENTITY(1,1) PRIMARY KEY,
     MACANBO INT,
-    MANHANKHAU INT,
     TENDANGNHAP VARCHAR(50) UNIQUE,
     MATKHAU VARCHAR(100),
     VAITRO VARCHAR(50),
-    EMAIL VARCHAR(100) UNIQUE,
-    TRANGTHAI VARCHAR(50) DEFAULT 'CHO_KICH_HOAT',
-    FOREIGN KEY (MACANBO) REFERENCES CANBO(MACANBO),
-    FOREIGN KEY (MANHANKHAU) REFERENCES NHANKHAU(MANHANKHAU)
+    FOREIGN KEY (MACANBO) REFERENCES CANBO(MACANBO)
 );
 ------------------------------------------thu phi-dong gop
 CREATE TABLE LOAIPHI (
@@ -238,47 +234,9 @@ CREATE INDEX idx_tamvang_nhankhau_ngay
         ON LICHSU_THAYDOI_HOKHAU(NGAYTHAYDOI DESC);
     
 
--- =============================================
--- 4. CẬP NHẬT BẢNG TAIKHOAN - Thêm cột MANHANKHAU
--- =============================================
-
--- Thêm cột MANHANKHAU vào bảng TAIKHOAN (nếu chưa có)
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TAIKHOAN') AND name = 'MANHANKHAU')
-BEGIN
-    ALTER TABLE TAIKHOAN
-    ADD MANHANKHAU INT NULL;
-    
-    ALTER TABLE TAIKHOAN
-    ADD CONSTRAINT FK_TAIKHOAN_NHANKHAU 
-        FOREIGN KEY (MANHANKHAU) 
-        REFERENCES NHANKHAU(MANHANKHAU);
-    
-    PRINT 'Đã thêm cột MANHANKHAU vào bảng TAIKHOAN';
-END
-
--- Thêm cột EMAIL nếu chưa có
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TAIKHOAN') AND name = 'EMAIL')
-BEGIN
-    ALTER TABLE TAIKHOAN
-    ADD EMAIL VARCHAR(100) NULL;
-    
-    -- Tạo unique constraint cho EMAIL
-    CREATE UNIQUE INDEX IX_TAIKHOAN_EMAIL ON TAIKHOAN(EMAIL) WHERE EMAIL IS NOT NULL;
-    
-    PRINT 'Đã thêm cột EMAIL vào bảng TAIKHOAN';
-END
-
--- Thêm cột TRANGTHAI nếu chưa có
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TAIKHOAN') AND name = 'TRANGTHAI')
-BEGIN
-    ALTER TABLE TAIKHOAN
-    ADD TRANGTHAI VARCHAR(50) DEFAULT 'CHO_KICH_HOAT';
-    
-    PRINT 'Đã thêm cột TRANGTHAI vào bảng TAIKHOAN';
-END
 
 -- =============================================
--- 5. TẠO CÁC VIEW HỖ TRỢ (Tùy chọn)
+-- 4. TẠO CÁC VIEW HỖ TRỢ (Tùy chọn)
 -- =============================================
 
 -- View tổng hợp thông tin nhân khẩu và hộ khẩu

@@ -6,8 +6,8 @@ import ResidentStats from "../features/residents/ResidentStats";
 import ResidentFilters from "../features/residents/ResidentFilters";
 import ResidentTable from "../features/residents/ResidentTable";
 import ResidentDetailDrawer from "../features/residents/ResidentDetailDrawer";
-import ResidentEditModal from "../features/residents/ResidentEditModal";
-import { fetchResidentsApi, submitResidentChangeApi } from "../features/residents/api";
+import AdminResidentEditModal from "../features/residents/AdminResidentEditModal";
+import { fetchResidentsApi, deleteResidentApi } from "../features/residents/api";
 
 const perPageOptions = [5, 10, 20];
 const residenceTypeMap = {
@@ -20,24 +20,14 @@ export default function QuanLyNhanKhau() {
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({
-    maNhanKhau: "",
-    loaiThayDoi: "",
-    ngayChuyenDi: "",
-    noiChuyen: "",
-    ghiChu: "",
-    noiDungThayDoi: "",
-  });
-  const [editErrors, setEditErrors] = useState({});
-  const [editSubmitting, setEditSubmitting] = useState(false);
-  const [editError, setEditError] = useState("");
   const [search, setSearch] = useState("");
   const [gender, setGender] = useState("all");
   const [residenceType, setResidenceType] = useState("all");
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
+  const [editingResident, setEditingResident] = useState(null);
+  const [isAdminEditOpen, setIsAdminEditOpen] = useState(false);
 
   const fetchResidents = useCallback(async () => {
     try {
@@ -75,70 +65,44 @@ export default function QuanLyNhanKhau() {
     setSelected(resident);
   };
 
-  const deleteResident = (resident) => {
-    if (confirm(`Bạn muốn xoá nhân khẩu ${resident.name}?`)) {
-      alert("Đã xoá (mô phỏng).");
+  const deleteResident = async (resident) => {
+    const maNhanKhau = resident.maNhanKhau || resident.id;
+    
+    if (!maNhanKhau) {
+      alert("Không tìm thấy mã nhân khẩu để xóa.");
+      return;
+    }
+    
+    const maNhanKhauNum = typeof maNhanKhau === "string" ? parseInt(maNhanKhau, 10) : maNhanKhau;
+    if (isNaN(maNhanKhauNum) || maNhanKhauNum <= 0) {
+      alert("Mã nhân khẩu không hợp lệ.");
+      return;
+    }
+
+    const residentName = resident.name || resident.hoTen || "nhân khẩu này";
+    const confirmMessage = `Bạn có chắc chắn muốn xóa nhân khẩu "${residentName}"?\n\nHành động này không thể hoàn tác.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteResidentApi(maNhanKhauNum);
+      alert("Xóa nhân khẩu thành công!");
+      fetchResidents();
+    } catch (error) {
+      alert("Lỗi khi xóa nhân khẩu: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const openEdit = (resident) => {
-    setEditing(resident);
-    setEditForm({
-      maNhanKhau: resident.id || "",
-      loaiThayDoi: "",
-      ngayChuyenDi: "",
-      noiChuyen: "",
-      ghiChu: "",
-      noiDungThayDoi: "",
-    });
-    setEditErrors({});
-    setEditError("");
+    // Sử dụng AdminResidentEditModal thay vì ResidentEditModal
+    setEditingResident(resident);
+    setIsAdminEditOpen(true);
   };
 
-  const handleEditChange = (key, value) => {
-    setEditForm((prev) => ({ ...prev, [key]: value }));
-    setEditErrors((prev) => ({ ...prev, [key]: "" }));
-    setEditError("");
-  };
-
-  const validateEdit = () => {
-    const errs = {};
-    if (!editForm.maNhanKhau) errs.maNhanKhau = "Thiếu mã nhân khẩu";
-    if (!editForm.loaiThayDoi) errs.loaiThayDoi = "Chọn loại thay đổi";
-    if (!editForm.ngayChuyenDi) errs.ngayChuyenDi = "Chọn ngày chuyển đi";
-    if (!editForm.noiChuyen) errs.noiChuyen = "Nhập nơi chuyển";
-    if (!editForm.noiDungThayDoi) errs.noiDungThayDoi = "Nhập nội dung thay đổi";
-    return errs;
-  };
-
-  const submitEdit = async (e) => {
-    e.preventDefault();
-    const errs = validateEdit();
-    if (Object.keys(errs).length) {
-      setEditErrors(errs);
-      return;
-    }
-    setEditSubmitting(true);
-    setEditError("");
-    try {
-      await submitResidentChangeApi({
-        maNhanKhau: editForm.maNhanKhau,
-        loaiThayDoi: editForm.loaiThayDoi,
-        ngayChuyenDi: editForm.ngayChuyenDi,
-        noiChuyen: editForm.noiChuyen,
-        ghiChu: editForm.ghiChu,
-        noiDungThayDoi: editForm.noiDungThayDoi,
-      });
-      alert("Đã cập nhật thay đổi nhân khẩu.");
-      setEditing(null);
-      fetchResidents();
-    } catch (err) {
-      console.error(err);
-      setEditError("Không thể cập nhật. Vui lòng thử lại.");
-    } finally {
-      setEditSubmitting(false);
-    }
-  };
 
   return (
     <div className="relative min-h-screen bg-gray-900 text-gray-100">
@@ -238,17 +202,28 @@ export default function QuanLyNhanKhau() {
         </div>
       </div>
 
-      <ResidentDetailDrawer resident={selected} onClose={() => setSelected(null)} />
-
-      <ResidentEditModal
-        open={!!editing}
-        form={editForm}
-        errors={editErrors}
-        submitting={editSubmitting}
-        submitError={editError}
-        onClose={() => setEditing(null)}
-        onChange={handleEditChange}
-        onSubmit={submitEdit}
+      <ResidentDetailDrawer 
+        resident={selected} 
+        onClose={() => setSelected(null)}
+        onEdit={(resident) => {
+          setEditingResident(resident);
+          setIsAdminEditOpen(true);
+          setSelected(null);
+        }}
+      />
+      
+      <AdminResidentEditModal
+        resident={editingResident}
+        isOpen={isAdminEditOpen}
+        onClose={() => {
+          setIsAdminEditOpen(false);
+          setEditingResident(null);
+        }}
+        onUpdate={() => {
+          fetchResidents();
+          setIsAdminEditOpen(false);
+          setEditingResident(null);
+        }}
       />
     </div>
   );

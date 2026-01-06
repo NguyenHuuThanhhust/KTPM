@@ -11,3 +11,8 @@ public class YeuCauThayDoiNhanKhauRequest {
     private String ghiChu; // Ghi chú từ chủ hộ
 }
 
+
+
+
+
+

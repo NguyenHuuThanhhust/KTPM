@@ -110,86 +110,121 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
   const duLieu = parseDuLieu();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">Xác thực yêu cầu</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Xác thực yêu cầu</h2>
+            <p className="text-sm text-gray-400 mt-1">Xem và xác thực yêu cầu thay đổi nhân khẩu</p>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-6">
           {/* Thông tin yêu cầu */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Loại yêu cầu:</span>
-              <span className="font-medium">{yeuCau.loaiYeuCauLabel}</span>
+          <div className="bg-gray-800/50 rounded-xl p-5 border border-white/5 space-y-3">
+            <div className="flex items-center gap-2 mb-4">
+              <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                yeuCau.loaiYeuCau === "THEM" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
+                yeuCau.loaiYeuCau === "SUA" ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" :
+                "bg-red-500/20 text-red-300 border border-red-500/30"
+              }`}>
+                {yeuCau.loaiYeuCauLabel}
+              </div>
+              <div className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
+                {yeuCau.trangThaiLabel}
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Chủ hộ:</span>
-              <span className="font-medium">{yeuCau.hoTenChuHo} ({yeuCau.tenDangNhap})</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Số hộ khẩu:</span>
-              <span className="font-medium">{yeuCau.soHoKhau}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-500">Ngày tạo:</span>
-              <span className="font-medium">
-                {yeuCau.ngayTao ? new Date(yeuCau.ngayTao).toLocaleString("vi-VN") : "—"}
-              </span>
-            </div>
-            {yeuCau.ghiChu && (
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-sm text-gray-500">Ghi chú:</span>
-                <p className="text-sm mt-1">{yeuCau.ghiChu}</p>
+                <span className="text-gray-400 block mb-1">Chủ hộ:</span>
+                <span className="text-white font-semibold">{yeuCau.hoTenChuHo}</span>
+                <span className="text-gray-500 text-xs ml-2">({yeuCau.tenDangNhap})</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block mb-1">Số hộ khẩu:</span>
+                <span className="text-white font-semibold">{yeuCau.soHoKhau}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block mb-1">Ngày tạo:</span>
+                <span className="text-white">
+                  {yeuCau.ngayTao ? new Date(yeuCau.ngayTao).toLocaleString("vi-VN") : "—"}
+                </span>
+              </div>
+              {yeuCau.maNhanKhau && (
+                <div>
+                  <span className="text-gray-400 block mb-1">Mã nhân khẩu:</span>
+                  <span className="text-white font-semibold">#{yeuCau.maNhanKhau}</span>
+                </div>
+              )}
+            </div>
+            
+            {yeuCau.ghiChu && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <span className="text-gray-400 text-sm block mb-1">Ghi chú:</span>
+                <p className="text-gray-300 text-sm">{yeuCau.ghiChu}</p>
               </div>
             )}
           </div>
 
           {/* Dữ liệu nhân khẩu */}
           {duLieu && (
-            <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-3">Thông tin nhân khẩu:</h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="bg-gray-800/50 rounded-xl p-5 border border-white/5">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="w-1 h-5 bg-blue-500 rounded"></span>
+                Thông tin nhân khẩu {yeuCau.loaiYeuCau === "THEM" ? "mới" : yeuCau.loaiYeuCau === "SUA" ? "cần sửa" : "cần xóa"}
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 {duLieu.hoTen && (
                   <div>
-                    <span className="text-gray-500">Họ tên:</span>
-                    <p className="font-medium">{duLieu.hoTen}</p>
+                    <span className="text-gray-400 block mb-1">Họ tên:</span>
+                    <p className="text-white font-semibold">{duLieu.hoTen}</p>
                   </div>
                 )}
                 {duLieu.gioiTinh && (
                   <div>
-                    <span className="text-gray-500">Giới tính:</span>
-                    <p className="font-medium">{duLieu.gioiTinh}</p>
+                    <span className="text-gray-400 block mb-1">Giới tính:</span>
+                    <p className="text-white">{duLieu.gioiTinh}</p>
                   </div>
                 )}
                 {duLieu.ngaySinh && (
                   <div>
-                    <span className="text-gray-500">Ngày sinh:</span>
-                    <p className="font-medium">{duLieu.ngaySinh}</p>
+                    <span className="text-gray-400 block mb-1">Ngày sinh:</span>
+                    <p className="text-white">
+                      {duLieu.ngaySinh.includes("T") 
+                        ? new Date(duLieu.ngaySinh).toLocaleDateString("vi-VN")
+                        : duLieu.ngaySinh}
+                    </p>
                   </div>
                 )}
                 {duLieu.cmnd && (
                   <div>
-                    <span className="text-gray-500">CCCD:</span>
-                    <p className="font-medium">{duLieu.cmnd}</p>
+                    <span className="text-gray-400 block mb-1">CCCD/CMND:</span>
+                    <p className="text-white font-mono">{duLieu.cmnd}</p>
                   </div>
                 )}
                 {duLieu.ngheNghiep && (
                   <div>
-                    <span className="text-gray-500">Nghề nghiệp:</span>
-                    <p className="font-medium">{duLieu.ngheNghiep}</p>
+                    <span className="text-gray-400 block mb-1">Nghề nghiệp:</span>
+                    <p className="text-white">{duLieu.ngheNghiep}</p>
                   </div>
                 )}
                 {duLieu.quanHeVoiChuHo && (
                   <div>
-                    <span className="text-gray-500">Quan hệ với chủ hộ:</span>
-                    <p className="font-medium">{duLieu.quanHeVoiChuHo}</p>
+                    <span className="text-gray-400 block mb-1">Quan hệ với chủ hộ:</span>
+                    <p className="text-white">{duLieu.quanHeVoiChuHo}</p>
+                  </div>
+                )}
+                {duLieu.diaChi && (
+                  <div className="col-span-2">
+                    <span className="text-gray-400 block mb-1">Địa chỉ:</span>
+                    <p className="text-white">{duLieu.diaChi}</p>
                   </div>
                 )}
               </div>
@@ -198,11 +233,11 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
 
           {/* Form từ chối */}
           {hanhDong === "TU_CHOI" && (
-            <div>
-              <label className="block text-sm font-medium mb-2">Lý do từ chối *</label>
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+              <label className="block text-sm font-semibold text-red-300 mb-2">Lý do từ chối *</label>
               <textarea
-                className="w-full px-3 py-2 border rounded-lg"
-                rows="3"
+                className="w-full px-4 py-3 bg-gray-900 border border-red-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                rows="4"
                 value={lyDoTuChoi}
                 onChange={(e) => setLyDoTuChoi(e.target.value)}
                 placeholder="Nhập lý do từ chối yêu cầu này..."
@@ -212,33 +247,33 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
           )}
 
           {message && (
-            <div className={`p-3 rounded-lg text-sm ${
+            <div className={`p-4 rounded-xl text-sm border ${
               message.type === "success" 
-                ? "bg-green-50 text-green-700 border border-green-200" 
-                : "bg-red-50 text-red-700 border border-red-200"
+                ? "bg-green-500/10 text-green-300 border-green-500/30" 
+                : "bg-red-500/10 text-red-300 border-red-500/30"
             }`}>
               {message.text}
             </div>
           )}
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 border-t border-white/10">
             {hanhDong !== "TU_CHOI" && (
               <>
                 <button
                   onClick={handleXacThuc}
                   disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
                 >
-                  <Check className="w-4 h-4" />
-                  {submitting ? "Đang xử lý..." : "Xác thực"}
+                  <Check className="w-5 h-5" />
+                  {submitting ? "Đang xử lý..." : "Xác nhận xác thực"}
                 </button>
                 <button
                   onClick={() => setHanhDong("TU_CHOI")}
                   disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2 transition"
                 >
-                  <XCircle className="w-4 h-4" />
+                  <XCircle className="w-5 h-5" />
                   Từ chối
                 </button>
               </>
@@ -248,7 +283,7 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
                 <button
                   onClick={handleTuChoi}
                   disabled={submitting || !lyDoTuChoi.trim()}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {submitting ? "Đang xử lý..." : "Xác nhận từ chối"}
                 </button>
@@ -258,7 +293,7 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
                     setLyDoTuChoi("");
                   }}
                   disabled={submitting}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                  className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-semibold transition"
                 >
                   Hủy
                 </button>
@@ -267,7 +302,7 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
             <button
               onClick={onClose}
               disabled={submitting}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl font-semibold transition disabled:opacity-50"
             >
               Đóng
             </button>
@@ -277,4 +312,9 @@ export default function YeuCauXacThucModal({ yeuCau, isOpen, onClose, onUpdate }
     </div>
   );
 }
+
+
+
+
+
 

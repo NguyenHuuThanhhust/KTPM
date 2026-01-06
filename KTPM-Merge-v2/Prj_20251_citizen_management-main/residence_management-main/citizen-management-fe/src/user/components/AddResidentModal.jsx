@@ -13,6 +13,7 @@ export default function AddResidentModal({ householdId, isOpen, onClose, onAdd }
     cmnd: "",
     ngheNghiep: "",
     quanHeVoiChuHo: "Con",
+    trangThai: "Moi sinh",
     ghiChu: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +64,7 @@ export default function AddResidentModal({ householdId, isOpen, onClose, onAdd }
         cmnd: "",
         ngheNghiep: "",
         quanHeVoiChuHo: "Con",
+        trangThai: "Moi sinh",
         ghiChu: "",
       });
 
@@ -162,6 +164,20 @@ export default function AddResidentModal({ householdId, isOpen, onClose, onAdd }
               <option value="Cha">Cha</option>
               <option value="Mẹ">Mẹ</option>
               <option value="Khác">Khác</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Trạng thái *</label>
+            <select
+              required
+              className="w-full px-3 py-2 border rounded-lg"
+              value={formData.trangThai}
+              onChange={(e) => setFormData({ ...formData, trangThai: e.target.value })}
+            >
+              <option value="Moi sinh">Mới sinh</option>
+              <option value="Thuong tru">Thường trú</option>
+              <option value="Qua doi">Qua đời</option>
+              <option value="Chuyen di">Chuyển đi</option>
             </select>
           </div>
           <div>

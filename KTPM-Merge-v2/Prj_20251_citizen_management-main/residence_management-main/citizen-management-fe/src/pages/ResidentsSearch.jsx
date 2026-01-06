@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
-import { Filter, Search, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Filter, Search, Users, Loader2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Header from "../headers/Header";
-import { residentRecords } from "../data/residents";
+
+const API_BASE = "http://localhost:8080/api";
 
 export default function ResidentsSearch() {
   const [form, setForm] = useState({
@@ -16,18 +17,109 @@ export default function ResidentsSearch() {
     residenceType: "",
   });
 
-  const results = useMemo(() => {
-    return residentRecords.filter((resident) => {
-      if (form.keyword && !resident.name.toLowerCase().includes(form.keyword.toLowerCase())) return false;
-      if (form.cccd && !resident.cccd.includes(form.cccd)) return false;
-      if (form.gender && resident.gender !== form.gender) return false;
-      if (form.household && !resident.household.toLowerCase().includes(form.household.toLowerCase())) return false;
-      if (form.occupation && !resident.occupation.toLowerCase().includes(form.occupation.toLowerCase())) return false;
-      if (form.residenceType && resident.residenceType !== form.residenceType) return false;
-      if (form.birthFrom && new Date(resident.birthDate) < new Date(form.birthFrom)) return false;
-      if (form.birthTo && new Date(resident.birthDate) > new Date(form.birthTo)) return false;
-      return true;
-    });
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Hàm tìm kiếm từ backend
+  const searchResidents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Xây dựng request body theo TimKiemRequest (chỉ có hoTen, soHoKhau, cmnd)
+      const searchRequest = {};
+      if (form.keyword) searchRequest.hoTen = form.keyword;
+      if (form.cccd) searchRequest.cmnd = form.cccd;
+      if (form.household) {
+        const soHoKhau = parseInt(form.household.replace(/\D/g, ""));
+        if (!isNaN(soHoKhau)) searchRequest.soHoKhau = soHoKhau;
+      }
+
+      // Nếu không có điều kiện nào, lấy tất cả nhân khẩu
+      let data = [];
+      if (Object.keys(searchRequest).length > 0) {
+        const response = await fetch(`${API_BASE}/nhankhau/tim-kiem`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(searchRequest),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Lỗi tìm kiếm: ${response.status}`);
+        }
+
+        data = await response.json();
+      } else {
+        // Lấy tất cả nhân khẩu
+        const response = await fetch(`${API_BASE}/nhankhau`);
+        if (response.ok) {
+          data = await response.json();
+        }
+      }
+
+      const mapped = (Array.isArray(data) ? data : []).map((nk) => ({
+        id: nk.maNhanKhau,
+        name: nk.hoTen || "",
+        gender: nk.gioiTinh || "",
+        birthDate: nk.ngaySinh ? (nk.ngaySinh.includes("T") ? nk.ngaySinh.split("T")[0] : nk.ngaySinh) : "",
+        cccd: nk.cmnd || "",
+        household: nk.soHoKhau ? String(nk.soHoKhau) : "",
+        occupation: nk.ngheNghiep || "",
+        residenceType: nk.trangThai?.toLowerCase().includes("tam") ? "tam-tru" : 
+                      nk.trangThai?.toLowerCase().includes("kinh") ? "kinh-doanh" : "thuong-tru",
+      }));
+
+      // Lọc thêm ở frontend theo các điều kiện khác
+      let filtered = mapped;
+      if (form.gender) {
+        filtered = filtered.filter(r => r.gender === form.gender);
+      }
+      if (form.residenceType) {
+        filtered = filtered.filter(r => r.residenceType === form.residenceType);
+      }
+      if (form.occupation) {
+        filtered = filtered.filter(r => 
+          r.occupation && r.occupation.toLowerCase().includes(form.occupation.toLowerCase())
+        );
+      }
+      if (form.birthFrom) {
+        filtered = filtered.filter(r => {
+          if (!r.birthDate) return false;
+          return new Date(r.birthDate) >= new Date(form.birthFrom);
+        });
+      }
+      if (form.birthTo) {
+        filtered = filtered.filter(r => {
+          if (!r.birthDate) return false;
+          return new Date(r.birthDate) <= new Date(form.birthTo);
+        });
+      }
+
+      setResults(filtered);
+    } catch (err) {
+      console.error("Error searching residents:", err);
+      setError(err.message || "Không thể tìm kiếm nhân khẩu");
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Tự động tìm kiếm khi form thay đổi (với debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Chỉ tìm kiếm nếu có ít nhất một điều kiện
+      const hasCondition = form.keyword || form.cccd || form.gender || form.household || 
+                          form.occupation || form.residenceType || form.birthFrom || form.birthTo;
+      if (hasCondition) {
+        searchResidents();
+      } else {
+        setResults([]);
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timer);
   }, [form]);
 
   const handleChange = (key, value) => {
@@ -177,18 +269,49 @@ export default function ResidentsSearch() {
                     <Search className="w-5 h-5 text-blue-300" />
                     Kết quả ({results.length})
                   </h2>
-                  <span className="text-xs text-gray-400">Tự động cập nhật khi thay đổi bộ lọc</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={searchResidents}
+                      disabled={loading}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Đang tìm...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4" />
+                          Tìm kiếm
+                        </>
+                      )}
+                    </button>
+                    <span className="text-xs text-gray-400">Tự động cập nhật khi thay đổi bộ lọc</span>
+                  </div>
                 </div>
+                
+                {error && (
+                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
+
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                  {results.length ? (
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                      <span className="ml-2 text-gray-400">Đang tìm kiếm...</span>
+                    </div>
+                  ) : results.length ? (
                     results.map((resident) => (
-                      <div key={resident.id} className="rounded-2xl border border-white/10 p-4 flex flex-col gap-1">
+                      <div key={resident.id} className="rounded-2xl border border-white/10 p-4 flex flex-col gap-1 hover:border-blue-500/30 transition">
                         <div className="flex items-center justify-between">
-                          <p className="text-white font-semibold">{resident.name}</p>
-                          <span className="text-xs text-gray-500">{resident.cccd}</span>
+                          <p className="text-white font-semibold">{resident.name || "—"}</p>
+                          <span className="text-xs text-gray-500 font-mono">{resident.cccd || "—"}</span>
                         </div>
                         <p className="text-xs text-gray-500">
-                          {new Date(resident.birthDate).toLocaleDateString("vi-VN")} • {resident.gender} • {resident.household}
+                          {resident.birthDate ? new Date(resident.birthDate).toLocaleDateString("vi-VN") : "—"} • {resident.gender || "—"} • Hộ khẩu {resident.household || "—"}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-gray-300 mt-1">
                           <span className="px-2 py-0.5 rounded-full bg-white/5">{resident.occupation || "Chưa cập nhật"}</span>
@@ -203,7 +326,9 @@ export default function ResidentsSearch() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-400">Không có nhân khẩu phù hợp với bộ lọc.</p>
+                    <p className="text-sm text-gray-400 text-center py-8">
+                      {error ? "Có lỗi xảy ra khi tìm kiếm" : "Không có nhân khẩu phù hợp với bộ lọc."}
+                    </p>
                   )}
                 </div>
               </section>

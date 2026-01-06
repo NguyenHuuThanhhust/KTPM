@@ -18,7 +18,7 @@ export default function ResidentTable({
             <th className="px-6 py-4 text-left">Năm sinh</th>
             <th className="px-6 py-4 text-left">CCCD</th>
             <th className="px-6 py-4 text-left">Hộ khẩu</th>
-            <th className="px-6 py-4 text-left">Loại cư trú</th>
+            <th className="px-6 py-4 text-left">Trạng thái</th>
             <th className="px-6 py-4 text-center">Thao tác</th>
           </tr>
         </thead>
@@ -40,13 +40,35 @@ export default function ResidentTable({
               const typeBadge = residenceTypeMap[resident.residenceType] || residenceTypeMap["thuong-tru"];
               return (
                 <tr key={resident.id} className="border-b border-white/5 hover:bg-white/5 transition">
-                  <td className="px-6 py-4 text-white font-semibold">{resident.name}</td>
-                  <td className="px-6 py-4 text-gray-300">{new Date(resident.birthDate).toLocaleDateString("vi-VN")}</td>
-                  <td className="px-6 py-4 text-gray-300">{resident.cccd}</td>
-                  <td className="px-6 py-4 text-gray-300">{resident.household}</td>
+                  <td className="px-6 py-4 text-white font-semibold">{resident.name || resident.hoTen}</td>
+                  <td className="px-6 py-4 text-gray-300">
+                    {resident.birthDate 
+                      ? new Date(resident.birthDate).toLocaleDateString("vi-VN")
+                      : resident.ngaySinh 
+                        ? new Date(resident.ngaySinh).toLocaleDateString("vi-VN")
+                        : "—"}
+                  </td>
+                  <td className="px-6 py-4 text-gray-300">{resident.cccd || resident.cmnd || "—"}</td>
+                  <td className="px-6 py-4 text-gray-300">{resident.household || resident.soHoKhau || "—"}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${typeBadge.className}`}>
-                      {typeBadge.label}
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${
+                      resident.trangThai === "Thuong tru" || (resident.residenceType === "thuong-tru" && !resident.trangThai)
+                        ? "bg-emerald-500/10 text-emerald-200 border-emerald-500/40"
+                        : resident.trangThai === "Moi sinh"
+                        ? "bg-green-500/10 text-green-200 border-green-500/40"
+                        : resident.trangThai === "Qua doi"
+                        ? "bg-gray-500/10 text-gray-200 border-gray-500/40"
+                        : resident.trangThai === "Chuyen di"
+                        ? "bg-orange-500/10 text-orange-200 border-orange-500/40"
+                        : resident.residenceType === "tam-tru"
+                        ? "bg-amber-500/10 text-amber-200 border-amber-500/40"
+                        : typeBadge.className
+                    }`}>
+                      {resident.trangThai === "Thuong tru" ? "Thường trú" :
+                       resident.trangThai === "Moi sinh" ? "Mới sinh" :
+                       resident.trangThai === "Qua doi" ? "Qua đời" :
+                       resident.trangThai === "Chuyen di" ? "Chuyển đi" :
+                       typeBadge.label}
                     </span>
                   </td>
                   <td className="px-6 py-4">
